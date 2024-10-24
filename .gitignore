@@ -1,0 +1,7 @@
+.idea
+.vscode
+.env
+__pycache__
+conf/conf.py
+conf/conf_data.py
+
