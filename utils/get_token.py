@@ -10,14 +10,14 @@ dotenv_path = os.path.join(os.path.dirname(__file__), '..', 'conf', '.env')
 load_dotenv(dotenv_path)
 
 class GetToken:
-    def __init__(self, entorno="curso"):
+    def __init__(self, entorno="dev"):
         self.entorno = entorno
         self.token_file = os.path.join(os.path.dirname(__file__), '..', 'fixtures', 'token.json')
 
         # Cargar las variables de entorno desde el archivo .env
         self.bm_api_url = os.getenv('BM_API_AUTH_URL')
-        self.user = os.getenv('USER_ANE_TEST') if entorno == "curso" else os.getenv('USER_ANE')
-        self.password = os.getenv('PW_ANE_TEST') if entorno == "curso" else os.getenv('PW_ANE')
+        self.user = os.getenv('USER_ANE_TEST') if entorno == "dev" else os.getenv('USER_ANE')
+        self.password = os.getenv('PW_ANE_TEST') if entorno == "dev" else os.getenv('PW_ANE')
         self.headers = {'Content-Type': 'application/json', 'encoding': 'charset=utf-8'}
 
     def verificar_token(self):
@@ -30,9 +30,9 @@ class GetToken:
         with open(self.token_file, 'r') as f:
             data = json.load(f)
 
-        # Determinar si es entorno de "curso" o producción
-        if self.entorno == "curso":
-            token_key, fecha_key = "token_curso", "fecha_curso"
+        # Determinar si es entorno de "dev" o producción
+        if self.entorno == "dev":
+            token_key, fecha_key = "token_dev", "fecha_dev"
         else:
             token_key, fecha_key = "token_prod", "fecha_prod"
 
@@ -94,8 +94,8 @@ class GetToken:
         data = {
             "token_prod": "",
             "fecha_prod": "",
-            "token_curso": "",
-            "fecha_curso": ""
+            "token_dev": "",
+            "fecha_dev": ""
         }
         os.makedirs(os.path.dirname(self.token_file), exist_ok=True)
         with open(self.token_file, 'w') as f:
