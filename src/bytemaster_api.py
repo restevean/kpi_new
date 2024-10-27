@@ -3,13 +3,21 @@ from requests.exceptions import HTTPError
 import json
 from datetime import datetime, timedelta
 from conf import conf
-# import os
-from conf.conf_data import (ENTORNO,
-                            BM_API_URL,
-                            USER_ANE_TEST,
-                            PW_ANE_TEST,
-                            USER_ANE,
-                            PW_ANE)
+import os
+from dotenv import load_dotenv
+from conf.conf_data import ENTORNO
+
+
+# Cargar las variables de entorno desde el archivo .env en conf/
+load_dotenv(dotenv_path='conf/.env')
+
+BM_API_URL = os.getenv("BM_API_URL")
+BM_API_AUTH_URL = os.getenv("BM_API_AUTH_URL")
+USER_ANE_TEST = os.getenv("USER_ANE_TEST")
+PW_ANE_TEST = os.getenv("PW_ANE_TEST")
+USER_ANE = os.getenv("USER_ANE")
+PW_ANE = os.getenv("PW_ANE")
+
 
 class bytemaster_api:
    
