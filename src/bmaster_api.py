@@ -344,13 +344,13 @@ class BmasterApi:
             peticion=requests.post(url, json=query, headers=self.headers)
             #print(peticion.json())
             # print(query)
-            resp_dic["cod_error"]=peticion.status_code
+            resp_dic["status_code"]=peticion.status_code
             resp_dic["contenido"]=peticion.json()
             return resp_dic#peticion.json()
         except Exception as e:
             print("Problemas cogiendo en la CONSULTA_   \n" + query)
             print(e)
-            resp_dic["cod_error"]=peticion.status_code
+            resp_dic["status_code"]=peticion.status_code
             resp_dic["contenido"]=peticion.json()
             return resp_dic
 
@@ -643,7 +643,7 @@ class BmasterApi:
         try:
             peticion=requests.post(url,json=_json,headers=self.headers)
             resp_dic={}
-            resp_dic["cod_error"]=peticion.status_code
+            resp_dic["status_code"]=peticion.status_code
             resp_dic["contenido"]=peticion.json()
         except HTTPError as e:
             print (e.strerror)
@@ -655,7 +655,7 @@ class BmasterApi:
         try:
             peticion=requests.put(url,json=_json,headers=self.headers)
             resp_dic={}
-            resp_dic["cod_error"]=peticion.status_code
+            resp_dic["status_code"]=peticion.status_code
             resp_dic["contenido"]=peticion.json()
         except HTTPError as e:
             print (e.strerror)
@@ -667,7 +667,7 @@ class BmasterApi:
         try:
             peticion=requests.get(url,headers=self.headers)
             resp_dic={}
-            resp_dic["cod_error"]=peticion.status_code
+            resp_dic["status_code"]=peticion.status_code
             resp_dic["contenido"]=peticion.json()
         except HTTPError as e:
             print (e.strerror)

@@ -19,7 +19,14 @@ def estado_grub_anex(file_name):
             print(m_query) # Eliminar en producción
             bm = BmApi()
             query_reply = bm.consulta_(m_query)
+            print(query_reply["status_code"]) # Eliminar en producción
             print(query_reply) # Eliminar en producción
+            if "contenido" in query_reply and query_reply["contenido"]:
+                n_ipda = query_reply["contenido"][0].get("ipda")
+            else:
+                n_ipda = None  # O asigna otro valor predeterminado si lo prefieres
+            print(f"El ipda es: {n_ipda}")
+
 
 
 if __name__ == "__main__":
@@ -52,10 +59,10 @@ x 2. lee lineas y recibes el diccionario de cada linea
 x 3. formato nrefcor 12345-2024-VR que es su referencia
 x 4. query = "select ipda, * from trapda where nrefcor = '12345-2024-VR'"
 x 5. resp_consulta='bm.consutla_(query)'
-6. ipda=23454. 
+x 6. ipda=23454. 
 
 json _tracking {}
-resp_tracking= post_partida_trakcingf(id=ipda, json_tracking)
+resp_tracking = post_partida_trakcingf(id=ipda, json_tracking)
 
 if resp_tracking["cod_error"]==201:
     'exito'
