@@ -1,5 +1,4 @@
 {
-	"entorno":"curso",
 	"anexa_gruber_remote_dir":"/IN/POD_Test",
 	"sftp_private _key":"./sshkeyanexa.dat"
 }

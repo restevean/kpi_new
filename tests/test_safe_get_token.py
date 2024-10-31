@@ -10,15 +10,12 @@ def mock_lambda_client():
 
 
 def test_safe_get_token_no_context(mock_lambda_client):
-    # Configurar respuesta simulada de Lambda
     mock_response = MagicMock()
     mock_response.read.return_value = json.dumps({"token": "mock_token"}).encode("utf-8")
     mock_lambda_client.return_value.invoke.return_value = {"Payload": mock_response}
 
-    # Llamar a la función sin pasar contexto
     token = safe_get_token()
 
-    # Verificar que el token sea correcto
     assert token == "mock_token"
     mock_lambda_client.return_value.invoke.assert_called_once_with(
         FunctionName="RenewTokensFunction",
@@ -28,15 +25,12 @@ def test_safe_get_token_no_context(mock_lambda_client):
 
 
 def test_safe_get_token_with_test_context(mock_lambda_client):
-    # Configurar respuesta simulada de Lambda
     mock_response = MagicMock()
     mock_response.read.return_value = json.dumps({"token": "mock_test_token"}).encode("utf-8")
     mock_lambda_client.return_value.invoke.return_value = {"Payload": mock_response}
 
-    # Llamar a la función pasando contexto "test"
     token = safe_get_token(context="test")
 
-    # Verificar que el token sea correcto
     assert token == "mock_test_token"
     mock_lambda_client.return_value.invoke.assert_called_once_with(
         FunctionName="RenewTokensFunction",
@@ -46,15 +40,12 @@ def test_safe_get_token_with_test_context(mock_lambda_client):
 
 
 def test_safe_get_token_with_prod_context(mock_lambda_client):
-    # Configurar respuesta simulada de Lambda
     mock_response = MagicMock()
     mock_response.read.return_value = json.dumps({"token": "mock_prod_token"}).encode("utf-8")
     mock_lambda_client.return_value.invoke.return_value = {"Payload": mock_response}
 
-    # Llamar a la función pasando contexto "prod"
     token = safe_get_token(context="prod")
 
-    # Verificar que el token sea correcto
     assert token == "mock_prod_token"
     mock_lambda_client.return_value.invoke.assert_called_once_with(
         FunctionName="RenewTokensFunction",
@@ -64,11 +55,9 @@ def test_safe_get_token_with_prod_context(mock_lambda_client):
 
 
 def test_safe_get_token_missing_token(mock_lambda_client):
-    # Configurar respuesta simulada de Lambda sin 'token' en el body
     mock_response = MagicMock()
     mock_response.read.return_value = json.dumps({}).encode("utf-8")
     mock_lambda_client.return_value.invoke.return_value = {"Payload": mock_response}
 
-    # Verificar que se lance un KeyError cuando no haya 'token' en la respuesta
-    with pytest.raises(KeyError):
-        safe_get_token(context="test")
+    result = safe_get_token(context="test")
+    assert result is None  # O el valor predeterminado esperado

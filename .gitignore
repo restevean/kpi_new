@@ -4,4 +4,4 @@
 __pycache__
 conf/conf.py
 conf/conf_data.py
-
+.DS_Store
