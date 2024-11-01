@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from utils import fortras_stat as state
-from bmaster_api import BmasterApi as BmApi
+from utils.bmaster_api import BmasterApi as BmApi
 from datetime import datetime, timezone
 from utils.send_email import EmailSender
 
