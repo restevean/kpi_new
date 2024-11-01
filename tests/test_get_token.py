@@ -3,7 +3,7 @@ import json
 import pytest
 from unittest.mock import patch, mock_open
 from requests import Response
-from utils.get_token import GetToken
+from get_token import GetToken
 
 # Fixture para entorno "dev"
 @pytest.fixture

@@ -5,7 +5,8 @@ from email.mime.text import MIMEText
 
 class EmailSender:
 
-    # TODO The parameters of the __ini__ method are hardcoded and should be taken from environment variables.
+    # TODO The parameters of the __ini__ method are hardcoded and should be taken from environment variables. Perhaps
+    #  we can configure the class to use default values for parameters that are not passed when instantiating the class.
     def __init__(self):
         self.smtp_server = 'smtp.gmail.com'
         self.smtp_port = 465

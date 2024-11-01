@@ -101,3 +101,11 @@ class GetToken:
         with open(self.token_file, 'w') as f:
             json.dump(data, f, indent=4)
         print(f"Archivo '{self.token_file}' creado con éxito.")
+
+
+if __name__ == "__main__":
+    def main():
+        entorno = "dev"
+        get_token_instance = GetToken()
+        token = get_token_instance.verificar_token()
+        print(f"Token obtenido: {token}")

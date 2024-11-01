@@ -2,6 +2,5 @@
 .vscode
 .env
 __pycache__
-conf/conf.py
-conf/conf_data.py
+conf/
 .DS_Store
