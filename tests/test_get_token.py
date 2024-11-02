@@ -3,7 +3,7 @@ import json
 import pytest
 from unittest.mock import patch, mock_open
 from requests import Response
-from get_token import GetToken
+from deprecated.get_token import GetToken  # Actualizar la importación
 
 # Fixture para entorno "dev"
 @pytest.fixture
@@ -41,7 +41,7 @@ def test_crear_archivo_token(mock_path_join, tmpdir, entorno_dev):
 
 
 # Test para verificar que se solicita un nuevo token correctamente
-@patch("utils.get_token.requests.post")
+@patch("deprecated.get_token.requests.post")  # Cambiado utils a deprecated
 def test_solicitar_nuevo_token(mock_post, entorno_dev):
     """Test para verificar que se solicita un nuevo token correctamente."""
     # Simular una respuesta HTTP válida
@@ -65,7 +65,7 @@ def test_solicitar_nuevo_token(mock_post, entorno_dev):
 
 
 # Test para verificar el comportamiento cuando falla la solicitud de token
-@patch("utils.get_token.requests.post")
+@patch("deprecated.get_token.requests.post")  # Cambiado utils a deprecated
 def test_solicitar_nuevo_token_falla(mock_post, entorno_dev):
     """Test para verificar el comportamiento cuando falla la solicitud de token."""
     # Simular una respuesta HTTP inválida (500 Internal Server Error)

@@ -7,7 +7,7 @@ from utils.safe_get_token import safe_get_token
 # import json
 
 
-load_dotenv(dotenv_path='../conf/.env')
+load_dotenv(dotenv_path='../conf/.env.base')
 ENTORNO = os.getenv("ENTORNO")
 BM_API_URL = os.getenv("BM_API_URL")
 BM_API_AUTH_URL = os.getenv("BM_API_AUTH_URL")

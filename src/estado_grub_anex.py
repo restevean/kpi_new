@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from utils.send_email import EmailSender
 
 
-load_dotenv(dotenv_path='../conf/.env')
+load_dotenv(dotenv_path='../conf/.env.base')
 ENTORNO = os.getenv("ENTORNO")
 
 
