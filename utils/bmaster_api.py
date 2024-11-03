@@ -9,6 +9,9 @@ from utils.safe_get_token import safe_get_token
 
 load_dotenv(dotenv_path='../conf/.env.base')
 ENTORNO = os.getenv("ENTORNO")
+INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
+# TODO Change the path to get environment variables from corresponding customer file
+# load_dotenv(dotenv_path='../conf/.env.' + INTEGRATION_CUST)
 BM_API_URL = os.getenv("BM_API_URL")
 BM_API_AUTH_URL = os.getenv("BM_API_AUTH_URL")
 USER_ANE_TEST = os.getenv("USER_ANE_TEST")
