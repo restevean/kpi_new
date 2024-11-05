@@ -85,7 +85,6 @@ def file_process(file_name):
                     "fechatracking": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
                 }
                 # tracking_reply = bm.post_partida_tracking(n_ipda, query_reply["contenido"][0])
-                # TODO El 'statuscode' que recibo en fortras, no coincide con ninguno de los códigos EDI de la Excel
                 tracking_reply = bm.post_partida_tracking(n_ipda, n_json)
                 if  tracking_reply["status_code"] == 201:
                     print("Success")
