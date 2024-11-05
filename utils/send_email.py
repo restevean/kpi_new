@@ -1,17 +1,28 @@
+import os
+from dotenv import load_dotenv
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+load_dotenv(dotenv_path="../conf/.env.base")
+ENTORNO = os.getenv("ENTORNO")
+INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
+load_dotenv(dotenv_path="../conf/.env.' + INTEGRATION_CUST")
+SMTP_SERVER = os.getenv("SMTP_SERVER")
+SMTP_PORT = int(os.getenv("SMTP_PORT"))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME")
+SMTP_PASSWORD = os.getenv("SMTP_PW")
 
 class EmailSender:
 
-    # TODO The parameters of the __ini__ method are hardcoded and should be taken from environment variables. Perhaps
+    # TODO The parameters of the __init__ method are hardcoded and should be taken from environment variables. Perhaps
     #  we can configure the class to use default values for parameters that are not passed when instantiating the class.
+    # TODO Should be a great idea to send as minimum one email, but as option, varioys separated by commas.
     def __init__(self):
-        self.smtp_server = 'smtp.gmail.com'
-        self.smtp_port = 465
-        self.username = "integraciones@anexalogistica.com"
-        self.password = "i5486ntegraciones"
+        self.smtp_server = SMTP_SERVER
+        self.smtp_port = SMTP_PORT
+        self.username = SMTP_USERNAME
+        self.password = SMTP_PASSWORD
 
     def send_email(self, from_addr: str, to_addrs: list[str], subject: str, body: str):
         if isinstance(to_addrs, str):

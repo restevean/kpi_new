@@ -10,22 +10,21 @@ load_dotenv(dotenv_path='../conf/.env.base')
 ENTORNO = os.getenv("ENTORNO")
 
 
-# TODO Do I convert this to a class?
+
 def estado_grub_anex():
+    work_directory = "../fixtures"
     email_from = "Gruber Estado"
     email_subject = "Gruber Estado"
-    # TODO Need to compose the e-mail body. See Estado_Arcese_Anexa.py in KPI_Python project
     email_body = None
-    if ENTORNO == "dev":
+    if ENTORNO == "prod":
         email_to = ["restevean@gmail.com"]
-    elif ENTORNO == "prod":
+    else:
         email_to = ["restevean@gmail.com", "resteve24@gmail.com"]
 
-    # TODO Need to get SFTP data in order to download files in /fixtures
-    files = load_dir_files()
+    files = load_dir_files(work_directory)
     # Procesamos cada archivo
     for file in files:
-        if file_process(file):
+        if file_process(work_directory + "/" + file):
             files[file]["success"] = True
 
     # Movemos los archivos a la carpeta correspondiente en función de success
@@ -34,12 +33,13 @@ def estado_grub_anex():
     new_email.send_email(email_from, email_to, email_subject, "")
 
 
-def load_dir_files():
-    directory = "../fixtures"
+def load_dir_files(directory):
 
     files_in_dir = {
         file: {
-            "success": False,  # Valor predeterminado
+            "success": False,
+            "file_name": None,
+            "message": None,
             "misc": None
         }
         for file in os.listdir(directory)
@@ -101,14 +101,16 @@ def file_process(file_name):
 
 
 if __name__ == "__main__":
+    # estado_grub_anex()
+    file_process("../fixtures/STAT512.example_ANEXA.cd2babfd-5f19-40c1-afed-68693095597e")
 
+"""
     fichero = "../fixtures/STAT512.example_ANEXA.cd2babfd-5f19-40c1-afed-68693095597e"
     try:
         file_process(fichero)
     except FileNotFoundError:
         print("Archivo no encontrado. Verifica la ruta y el nombre.")
-
-   # load_dir_files()
+"""
 
 
 """

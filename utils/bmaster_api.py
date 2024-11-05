@@ -10,8 +10,7 @@ from utils.safe_get_token import safe_get_token
 load_dotenv(dotenv_path='../conf/.env.base')
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
-# TODO Change the path to get environment variables from corresponding customer file
-# load_dotenv(dotenv_path='../conf/.env.' + INTEGRATION_CUST)
+load_dotenv(dotenv_path='../conf/.env.' + INTEGRATION_CUST)
 BM_API_URL = os.getenv("BM_API_URL")
 BM_API_AUTH_URL = os.getenv("BM_API_AUTH_URL")
 USER_ANE_TEST = os.getenv("USER_ANE_TEST")
@@ -23,8 +22,8 @@ PW_ANE = os.getenv("PW_ANE")
 class BmasterApi:
 
     def __init__(self) -> None:
-        self.url= BM_API_URL
-        self.token="Bearer " + safe_get_token(context=ENTORNO)  # Ojo!!! Especificar que token queremos,
+        self.url = BM_API_URL
+        self.token = "Bearer " + safe_get_token(context=ENTORNO)  # Ojo!!! Especificar que token queremos,
         # "dev" o "prod",
                                                         # si no la función no devolverá token
         self.headers={'content-type':'application/json', 'encoding': 'charset=utf-8','Authorization': self.token}
