@@ -2,38 +2,45 @@ from bmaster_api import BmasterApi
 
 
 def busca_destinatario(rsocial='', codpostal='', cpais=''):
-    largo=len(rsocial)+1
-    bm=BmasterApi()
-    resp= {"ient": 0}
+    largo = len(rsocial)
+    bm = BmasterApi()
+    respuesta_default = {"ient": 0}
+    base_query = (
+        "SELECT [aetent].[iemp], ient, [cemp], [dnomfis], [ncif], ccodpos, [aebcodpos].dpob, [idirfis], "
+        "[aebdir].ipai, cpai "
+        "FROM [Anexa].[dbo].[aetent] "
+        "INNER JOIN aetemp ON aetent.iemp = aetemp.iemp "
+        "INNER JOIN [aebdir] ON aebdir.idir = aetemp.idirfis "
+        "INNER JOIN [dbo].[aebcodpos] ON [aebcodpos].icodpos = aebdir.icodpos "
+        "INNER JOIN [dbo].[aebpai] ON [aebpai].ipai = [aebdir].ipai "
+        "WHERE dnomfis LIKE '{rsocial}' AND cpai = '{cpais}' "
+        "AND NOT cent LIKE 'ENT%' AND NOT dnomcom LIKE '%BORRAR%'"
+    )
 
-    while largo>len(rsocial)//2:
-        largo=largo-1
-        # query="select top 10 * from aetent where dnomcom like '"+rsocial[:largo]+"%'"
-        querycount="select count(1) as cuenta from aetent where dnomcom like '"+rsocial[:largo]+"%'"
-        query = " SELECT [aetent].[iemp],ient,[cemp],[dnomfis],[ncif],ccodpos,[aebcodpos].dpob,[idirfis],[aebdir].ipai,cpai "
-        query += " FROM [Anexa].[dbo].[aetent] "
-        query += " inner join aetemp on aetent.iemp=aetemp.iemp"
-        query += "  inner join [aebdir] on aebdir.idir = aetemp.idirfis"
-        query += "              inner join [dbo].[aebcodpos] on [aebcodpos].icodpos = aebdir.icodpos "
-        query += "               inner join [dbo].[aebpai] on [aebpai].ipai=[aebdir].ipai "
-        query += " where dnomfis like  '"+rsocial[:largo]+"%' and cpai='"+cpais+"'" +" and not cent like 'ENT%' AND NOT dnomcom like '%BORRAR%'"
-        query_codpost = query+"and ccodpos ='"+codpostal+"'"
-        # print(query, "\n", query_codpost)
+    # Bucle para reducir el largo del nombre
+    while largo > len(rsocial) // 2:
+        search_name = rsocial[:largo]
+        largo -= 1
 
-        respuesta_query=bm.consulta_(query)
-        if respuesta_query["cod_error"]!=200 :
-            return resp
-        if len(respuesta_query["contenido"])==1:
-            print("\n\n\n Devuelve "+str(respuesta_query["contenido"][0]["ient"])+"\n\n\n")
-            return respuesta_query["contenido"][0]
+        query = base_query.format(rsocial=f"{search_name}%", cpais=cpais)
+        # query_codpost = f"{query} AND ccodpos = '{codpostal}'"
 
-        elif len(respuesta_query["contenido"])>1:
-        # respuesta_id_codpost=bm.consulta_(query=query_codpost)
+        respuesta_query = bm.consulta_(query)
+        if respuesta_query["cod_error"] != 200:
+            return respuesta_default
+        contenido = respuesta_query.get("contenido", [])
+
+        if len(contenido) == 1:
+            print(f"\n\n\n Devuelve {contenido[0]['ient']}\n\n\n")
+            return contenido[0]
+
+        elif len(contenido) > 1:
             print("Respuesta Query con denominación de origen")
-            for entidad in respuesta_query["contenido"]:
-                print(str(entidad['ient'])+" ---> "+entidad['dnomfis'] +" ---> "+str(entidad['cemp']) + " Codpostal: "+str(entidad['ccodpos']))
-                if entidad['ccodpos']== codpostal.replace(" ",""):
+            for entidad in contenido:
+                print(
+                    f"{entidad['ient']} ---> {entidad['dnomfis']} ---> {entidad['cemp']} Codpostal: {entidad['ccodpos']}")
+                if entidad['ccodpos'] == codpostal.replace(" ", ""):
                     return entidad
 
-    print ("BUSCA DESTINATIARIO "+rsocial +" Codigo postal: "+str(codpostal)+": No lo encuentro")
-    return resp
+    print(f"BUSCA DESTINATIARIO {rsocial} Codigo postal: {codpostal}: No lo encuentro")
+    return respuesta_default
