@@ -9,7 +9,7 @@ from utils.send_email import EmailSender
 load_dotenv(dotenv_path="../conf/.env.base")
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
-load_dotenv(dotenv_path="../conf/.env.' + INTEGRATION_CUST")
+load_dotenv(dotenv_path=f"../conf/.env.'+{INTEGRATION_CUST}")
 EMAIL_TO = os.getenv("EMAIL_TO")
 
 
@@ -73,18 +73,14 @@ class EstadoGruAne:
                         "fechatracking": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
                     }
                     n_cpda = query_reply["contenido"][0].get("cpda")
-                    if n_cpda:
-                        """
-                        json_file = (self.work_directory + "/json_files" + "/par_" + file_name.rsplit("/",
-                                                                            1)[-1] + "_" + n_cpda.strip() + ".json")
-                        with open(json_file, "w") as f:
-                            f.write(str(n_json))
-                        """
-                        json_dir = os.path.join(self.work_directory, "json_files")
-                        json_file = os.path.join(json_dir, f"par_{file_name.rsplit('/', 1)[-1]}_{n_cpda.strip()}.json")
-                        os.makedirs(json_dir, exist_ok=True)
-                        with open(json_file, "w") as f:
-                            f.write(str(n_json))
+
+                    # Excribimos el fichero json
+                    # if n_cpda:
+                    #     json_dir = os.path.join(self.work_directory, "json_files")
+                    #     json_file = os.path.join(json_dir, f"par_{file_name.rsplit('/', 1)[-1]}_{n_cpda.strip()}.json")
+                    #     os.makedirs(json_dir, exist_ok=True)
+                    #     with open(json_file, "w") as f:
+                    #         f.write(str(n_json))
 
                     tracking_reply = bm.post_partida_tracking(n_ipda, n_json)
                     self.files[file_name.rsplit("/", 1)[-1]]["file_name"] = file_name.rsplit("/", 1)[-1]
