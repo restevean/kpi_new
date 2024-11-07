@@ -7,7 +7,7 @@ from email.mime.text import MIMEText
 load_dotenv(dotenv_path="../conf/.env.base")
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
-load_dotenv(dotenv_path=f"../conf/.env.' + {INTEGRATION_CUST}")
+load_dotenv(dotenv_path=f"../conf/.env.{INTEGRATION_CUST}")
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = int(os.getenv("SMTP_PORT"))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME")
