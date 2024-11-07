@@ -130,7 +130,9 @@ class EstadoGruAne:
                                                                                f"hito {n_hito}-{n_cpda}")
                         print("Fail")
                 else:
-                    n_ipda = None  # O asigna otro valor predeterminado si lo prefieres
+                    n_ipda = None
+                    self.files[file_name.rsplit("/", 1)[-1]]["message"] = (f"\nNO Creada partida, "
+                                                                           f"corresponsal {n_ref_cor}")
                 print(f"El ipda es: {n_ipda}")
 
 
@@ -155,8 +157,9 @@ class EstadoGruAne:
             os.makedirs(target_dir, exist_ok=True)  # Crea el directorio si no existe
             os.rename(local_path, os.path.join(target_dir, file_name))
 
-            self.email_body = f"{file_info['message']}\nArchivo: {file_name}"
-            # print(self.email_body)
+            #self.email_body = f"{file_info['message']}\nArchivo: {file_name}"
+            self.email_body = f"{self.files[file_name.rsplit("/", 1)[-1]]["message"]}\nArchivo: {file_name}"
+            print(f"Email body; {self.email_body}")
             email_sender.send_email(self.email_from, self.email_to, self.email_subject, self.email_body)
 
         sftp.close()
