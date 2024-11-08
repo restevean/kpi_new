@@ -1,11 +1,10 @@
 import os
 from dotenv import load_dotenv
-# from send_email import SMTP_SERVER, SMTP_USERNAME, SMTP_PASSWORD
 from utils import fortras_stat as state
 from utils.bmaster_api import BmasterApi as BmApi
 from datetime import datetime, timezone
 from utils.send_email import EmailSender
-import paramiko
+from utils.sftp_connect import SftpConnection
 
 
 load_dotenv(dotenv_path="../conf/.env.base")
@@ -26,16 +25,16 @@ class EstadoGruAne:
         self.username = SFTP_USER
         self.password = SFTP_PW
         self.port = int(SFTP_PORT)
-        self.work_directory = "../fixtures"
+        self.local_work_directory = "../fixtures"
+        self.remote_work_directory = "/IN/STAT_TEST"
         self.download_files()
         self.files = self.load_dir_files()
         self.email_from = "Estado Gruber Anexa"
         self.email_subject = "Gruber Estado"
         self.email_body = None
-        self.entorno = ENTORNO  # Define ENTORNO como un atributo
+        self.entorno = ENTORNO
         self.email_to = [EMAIL_TO, "restevean@gmail.com"] if (self.entorno == "prod"
                                                               and EMAIL_TO) else ["restevean@gmail.com"]
-
 
     def load_dir_files(self):
         files_in_dir = {
@@ -45,33 +44,28 @@ class EstadoGruAne:
                 "message": "",
                 "misc": None
             }
-            for file in os.listdir(self.work_directory)
-            if os.path.isfile(os.path.join(self.work_directory, file))
+            for file in os.listdir(self.local_work_directory)
+            if os.path.isfile(os.path.join(self.local_work_directory, file))
         }
         print(files_in_dir)
         return files_in_dir
 
 
     def download_files(self):
-        transport = paramiko.Transport((self.host, self.port))
-        transport.connect(username=self.username, password=self.password)  # Conectar usando la contraseña
+        n_sftp = SftpConnection()
+        n_sftp.connect()
 
-        sftp = paramiko.SFTPClient.from_transport(transport)
-        print("Conexión establecida")
+        if not os.path.exists(self.local_work_directory):
+            os.makedirs(self.local_work_directory)
 
-        if not os.path.exists(self.work_directory):
-            os.makedirs(self.work_directory)
-
-        sftp.chdir("/IN/STAT_TEST")
-        for file in sftp.listdir():
-            if sftp.stat(file).st_mode & 0o170000 == 0o100000:  # Verifica si es un archivo regular
-                local_path = os.path.join(self.work_directory, file)
+        n_sftp.sftp.chdir(self.remote_work_directory)
+        for file in n_sftp.sftp.listdir():
+            if n_sftp.sftp.stat(file).st_mode & 0o170000 == 0o100000:  # Verifica si es un archivo regular
+                local_path = os.path.join(self.local_work_directory, file)
                 print(f"Descargando {file} a {local_path}")
-                sftp.get(file, local_path)  # Descarga el archivo
+                n_sftp.sftp.get(file, local_path)
+        n_sftp.disconnect()
 
-        sftp.close()
-        transport.close()
-        print("Conexión cerrada")
 
     @staticmethod
     def get_cod_hito(status):
@@ -106,7 +100,6 @@ class EstadoGruAne:
                         "fechatracking": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
                     }
                     n_cpda = query_reply["contenido"][0].get("cpda")
-
                     """
                     Excribimos el fichero json
                     if n_cpda:
@@ -140,20 +133,18 @@ class EstadoGruAne:
     def run(self):
         email_sender = EmailSender()
 
-        transport = paramiko.Transport((self.host, self.port))
-        transport.connect(username=self.username, password=self.password)  # Conectar usando la contraseña
-        sftp = paramiko.SFTPClient.from_transport(transport)
+        n_sftp = SftpConnection()
+        n_sftp.connect()
 
         for file_name, file_info in self.files.items():
-            local_path = os.path.join(self.work_directory, file_name)
+            local_path = os.path.join(self.local_work_directory, file_name)
             self.file_process(local_path)
 
-            remote_dir = "/IN/STAT_TEST/OK" if file_info["success"] else "/IN/STAT_TEST/ERROR"
+            remote_dir = f"{self.remote_work_directory}/OK" if file_info["success"] else f"{self.remote_work_directory}/ERROR"
             remote_path = f"{remote_dir}/{file_name}"
-            # print(f"Subiendo {file_name} a {remote_path} en el SFTP")
-            sftp.put(local_path, remote_path)
-            sftp.remove(f"/IN/STAT_TEST/{file_name}")
-            target_dir = os.path.join(self.work_directory, "success" if file_info["success"] else "fail")
+            n_sftp.sftp.put(local_path, remote_path)
+            n_sftp.sftp.remove(f"{self.remote_work_directory}/{file_name}")
+            target_dir = os.path.join(self.local_work_directory, "success" if file_info["success"] else "fail")
             os.makedirs(target_dir, exist_ok=True)  # Crea el directorio si no existe
             os.rename(local_path, os.path.join(target_dir, file_name))
 
@@ -162,9 +153,7 @@ class EstadoGruAne:
             print(f"Email body; {self.email_body}")
             email_sender.send_email(self.email_from, self.email_to, self.email_subject, self.email_body)
 
-        sftp.close()
-        transport.close()
-        print("Conexión SFTP cerrada")
+        n_sftp.disconnect()
 
 
 if __name__ == "__main__":
