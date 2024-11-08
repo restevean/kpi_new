@@ -96,8 +96,13 @@ class EstadoGruAne:
                 query_reply = bm.consulta_(m_query)
                 print(query_reply)  # Para depuración; elimina en producción
 
-                if "contenido" in query_reply and query_reply["contenido"]:
-                    # Extrae el contenido y procede con el procesamiento
+                # Verifica si el contenido está vacío y actualiza el mensaje si es así
+                if "contenido" in query_reply and not query_reply["contenido"]:
+                    # Caso de `contenido == []`
+                    # self.files[file_key]["message"] = f"\nNO Creada partida, corresponsal {n_ref_cor}"
+                    self.files[file_key]["success"] = False
+                elif "contenido" in query_reply and query_reply["contenido"]:
+                    # Procesa el contenido si no está vacío
                     record = query_reply["contenido"][0]
                     n_ipda = record.get("ipda")
                     n_hito = self.get_cod_hito(n_status)
@@ -107,8 +112,10 @@ class EstadoGruAne:
                     tracking_reply = bm.post_partida_tracking(n_ipda, n_json)
                     self.update_file_status(file_key, tracking_reply["status_code"], n_hito, n_cpda)
                 else:
-                    # Caso de no encontrar contenido en la consulta
-                    self.files[file_key]["message"] = f"\nNO Creada partida, corresponsal {n_ref_cor}"
+                    # Si no hay contenido o error, actualiza el mensaje adecuadamente
+                    # self.files[file_key]["message"] = f"\nNO Creada partida, corresponsal {n_ref_cor}"
+                    self.files[file_key]["success"] = False
+
                 print(f"El ipda es: {n_ipda if 'n_ipda' in locals() else 'None'}")
 
 
@@ -125,11 +132,11 @@ class EstadoGruAne:
         """Actualiza el estado del archivo en función de la respuesta del tracking."""
         if status_code == 201:
             self.files[file_key]["success"] = True
-            self.files[file_key]["message"] = f"\nCreada partida, hito {n_hito}-{n_cpda}"
+            self.files[file_key]["message"] += f"\nCreada partida, hito {n_hito}-{n_cpda}"
             print("Success")
         else:
             self.files[file_key]["success"] = False
-            self.files[file_key]["message"] = f"\nNO Creada partida, hito {n_hito}-{n_cpda}"
+            self.files[file_key]["message"] += f"\nNO Creada partida, hito {n_hito}-{n_cpda}"
             print("Fail")
 
 
@@ -151,9 +158,14 @@ class EstadoGruAne:
             os.makedirs(target_dir, exist_ok=True)  # Crea el directorio si no existe
             os.rename(local_path, os.path.join(target_dir, file_name))
 
-            #self.email_body = f"{file_info['message']}\nArchivo: {file_name}"
-            self.email_body = f"{self.files[file_name.rsplit("/", 1)[-1]]["message"]}\nArchivo: {file_name}"
-            print(f"Email body; {self.email_body}")
+            self.email_body = (
+                f"{file_info['message']}\nArchivo: {file_name}"
+                if file_info.get("message")
+                else f"No se crearon partidas para el archivo: {file_name}"
+            )
+
+            # self.email_body = f"{self.files[file_name.rsplit("/", 1)[-1]]["message"]}\nArchivo: {file_name}"
+            print(f"Email body: {self.email_body}")
             email_sender.send_email(self.email_from, self.email_to, self.email_subject, self.email_body)
 
         n_sftp.disconnect()

@@ -12,7 +12,7 @@ SFTP_USER = os.getenv("SFTP_USER")
 SFTP_PW = os.getenv("SFTP_PW")
 SFTP_PORT = os.getenv("SFTP_PORT")
 
-
+# TODO Missing unit tests
 class SftpConnection:
     def __init__(self):
         self.host = os.getenv("SFTP_SERVER")
