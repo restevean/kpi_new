@@ -82,52 +82,55 @@ class EstadoGruAne:
     def file_process(self, file_name):
         results = state.MensajeEstado().leer_stat_gruber(file_name)
         bm = BmApi()
+        file_key = file_name.rsplit("/", 1)[-1]  # Procesa solo el nombre de archivo
+
+        # Inicializa la entrada en self.files para este archivo
+        self.files[file_key] = {"file_name": file_key, "success": False, "message": ""}
 
         for lineas in results.get("Lineas", []):
             if lineas.get("Record type ‘Q10’") == "Q10":
                 n_ref_cor = lineas.get("Consignment number sending depot")
                 n_status = lineas.get("Status code")
                 m_query = f"select ipda, * from trapda where nrefcor ='{n_ref_cor}'"
-                print(m_query)  # Eliminar en producción
+                print(m_query)  # Para depuración; elimina en producción
                 query_reply = bm.consulta_(m_query)
-                print(query_reply)  # Eliminar en producción
+                print(query_reply)  # Para depuración; elimina en producción
+
                 if "contenido" in query_reply and query_reply["contenido"]:
-                    n_ipda = query_reply["contenido"][0].get("ipda")
+                    # Extrae el contenido y procede con el procesamiento
+                    record = query_reply["contenido"][0]
+                    n_ipda = record.get("ipda")
                     n_hito = self.get_cod_hito(n_status)
-                    n_json = {
-                        "codigohito": n_hito,
-                        "descripciontracking": file_name.rsplit("/", 1)[-1],
-                        "fechatracking": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-                    }
-                    n_cpda = query_reply["contenido"][0].get("cpda")
-                    """
-                    Excribimos el fichero json
-                    if n_cpda:
-                        json_dir = os.path.join(self.work_directory, "json_files")
-                        json_file = os.path.join(json_dir, f"par_{file_name.rsplit('/', 1)[-1]}_{n_cpda.strip()}.json")
-                        os.makedirs(json_dir, exist_ok=True)
-                        with open(json_file, "w") as f:
-                            f.write(str(n_json))
-                            """
+                    n_cpda = record.get("cpda")
+                    n_json = self.build_tracking_json(file_key, n_hito)
 
                     tracking_reply = bm.post_partida_tracking(n_ipda, n_json)
-                    self.files[file_name.rsplit("/", 1)[-1]]["file_name"] = file_name.rsplit("/", 1)[-1]
-                    if tracking_reply["status_code"] == 201:
-                        self.files[file_name.rsplit("/", 1)[-1]]["success"] = True
-                        self.files[file_name.rsplit("/", 1)[-1]]["message"] = (f"\nCreada partida, hito {n_hito}-"
-                                                                               f"{n_cpda}")
-                        print("Success")
-                    else:
-                        self.files[file_name.rsplit("/", 1)[-1]]["success"] = False
-                        self.files[file_name.rsplit("/", 1)[-1]]["message"] = (f"\nNO Creada partida, "
-                                                                               f"hito {n_hito}-{n_cpda}")
-                        print("Fail")
+                    self.update_file_status(file_key, tracking_reply["status_code"], n_hito, n_cpda)
                 else:
-                    n_ipda = None
-                    self.files[file_name.rsplit("/", 1)[-1]]["message"] = (f"\nNO Creada partida, "
-                                                                           f"corresponsal {n_ref_cor}")
-                print(f"El ipda es: {n_ipda}")
+                    # Caso de no encontrar contenido en la consulta
+                    self.files[file_key]["message"] = f"\nNO Creada partida, corresponsal {n_ref_cor}"
+                print(f"El ipda es: {n_ipda if 'n_ipda' in locals() else 'None'}")
 
+
+    @staticmethod
+    def build_tracking_json(file_key, n_hito):
+        """Construye el JSON de tracking."""
+        return {
+            "codigohito": n_hito,
+            "descripciontracking": file_key,
+            "fechatracking": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+        }
+
+    def update_file_status(self, file_key, status_code, n_hito, n_cpda):
+        """Actualiza el estado del archivo en función de la respuesta del tracking."""
+        if status_code == 201:
+            self.files[file_key]["success"] = True
+            self.files[file_key]["message"] = f"\nCreada partida, hito {n_hito}-{n_cpda}"
+            print("Success")
+        else:
+            self.files[file_key]["success"] = False
+            self.files[file_key]["message"] = f"\nNO Creada partida, hito {n_hito}-{n_cpda}"
+            print("Fail")
 
 
     def run(self):
