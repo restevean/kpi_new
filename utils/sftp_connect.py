@@ -6,13 +6,12 @@ from dotenv import load_dotenv
 load_dotenv(dotenv_path="../conf/.env.base")
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
-load_dotenv(dotenv_path=f"../conf/.env.'+{INTEGRATION_CUST}")
+load_dotenv(dotenv_path=f"../conf/.env.{INTEGRATION_CUST}")
 SFTP_SERVER = os.getenv("SFTP_SERVER")
 SFTP_USER = os.getenv("SFTP_USER")
 SFTP_PW = os.getenv("SFTP_PW")
 SFTP_PORT = os.getenv("SFTP_PORT")
 
-# TODO Missing unit tests
 class SftpConnection:
     def __init__(self):
         self.host = os.getenv("SFTP_SERVER")

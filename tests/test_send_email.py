@@ -1,35 +1,32 @@
 import os
 import pytest
 from unittest.mock import patch, MagicMock
-
-# Configura las variables de entorno necesarias antes de la importación
-os.environ["SMTP_SERVER"] = "smtp.test.com"
-os.environ["SMTP_PORT"] = "465"
-os.environ["SMTP_USERNAME"] = "test_user"
-os.environ["SMTP_PW"] = "test_password"
-
-from utils.send_email import EmailSender  # Importa después de configurar el entorno
-
+from utils.send_email import EmailSender
+from email.mime.text import MIMEText
 
 @pytest.fixture
 def setup_env():
-    # Fixture para limpiar las variables de entorno después de cada prueba
-    yield  # Permite la ejecución del código de prueba
-
-    # Limpia las variables de entorno después de la prueba
-    os.environ.pop("SMTP_SERVER", None)
-    os.environ.pop("SMTP_PORT", None)
-    os.environ.pop("SMTP_USERNAME", None)
-    os.environ.pop("SMTP_PW", None)
+    """Fixture que asegura que las variables de entorno necesarias estén definidas."""
+    with patch.dict(os.environ, {
+        "SMTP_USERNAME": "test_user",
+        "SMTP_PW": "test_password",
+        "SMTP_SERVER": "smtp.testserver.com",
+        "SMTP_PORT": "465"
+    }):
+        yield
 
 
 @patch("smtplib.SMTP_SSL")
 def test_send_email_success(mock_smtp, setup_env):
-    # Simula el servidor SMTP
     mock_server = MagicMock()
     mock_smtp.return_value.__enter__.return_value = mock_server
 
-    email_sender = EmailSender()
+    email_sender = EmailSender(
+        smtp_server="smtp.testserver.com",
+        smtp_port="465",
+        username="test_user",
+        password="test_password"
+    )
     result = email_sender.send_email(
         from_addr="sender@example.com",
         to_addrs=["recipient@example.com"],
@@ -37,10 +34,19 @@ def test_send_email_success(mock_smtp, setup_env):
         body="This is a test email."
     )
 
-    # Verifica que el login y el envío de correo se realizaron correctamente
     mock_server.login.assert_called_once_with("test_user", "test_password")
-    mock_server.sendmail.assert_called_once()  # Verifica que sendmail se llama una vez
-    assert result is True
+
+    # Crear un mensaje MIME para validación parcial
+    msg = MIMEText("This is a test email.")
+    msg["Subject"] = "Test Email"
+    msg["From"] = "sender@example.com"
+    msg["To"] = "recipient@example.com"
+
+    # Verificar que el mensaje enviado contiene las partes esenciales
+    actual_call_args = mock_server.sendmail.call_args[0]
+    assert actual_call_args[0] == "sender@example.com"
+    assert actual_call_args[1] == ["recipient@example.com"]
+    assert "This is a test email." in actual_call_args[2]
 
 
 @patch("smtplib.SMTP_SSL", side_effect=Exception("Connection error"))
@@ -54,13 +60,13 @@ def test_send_email_failure(mock_smtp, setup_env):
         body="This is a test email."
     )
 
-    # Verifica que el méthod devuelve False al fallar el envío
+    # Verifica que el método devuelve False al fallar el envío
     assert result is False
 
 
 @patch("smtplib.SMTP_SSL")
 def test_send_email_with_string_recipient(mock_smtp, setup_env):
-    # Verifica que el méthod maneja un destinatario único en formato string
+    # Verifica que el método maneja un destinatario único en formato string
     mock_server = MagicMock()
     mock_smtp.return_value.__enter__.return_value = mock_server
 
@@ -74,12 +80,12 @@ def test_send_email_with_string_recipient(mock_smtp, setup_env):
 
     # Verifica que el correo fue enviado y el destinatario fue convertido a lista
     mock_server.sendmail.assert_called_once()  # Verifica que sendmail se llama una vez
-    assert result is True
+    assert result is True  # Ajustado para verificar un booleano en lugar de una cadena
 
 
 @patch("smtplib.SMTP_SSL")
 def test_send_email_multiple_recipients(mock_smtp, setup_env):
-    # Verifica que el méthod maneja múltiples destinatarios correctamente
+    # Verifica que el método maneja múltiples destinatarios correctamente
     mock_server = MagicMock()
     mock_smtp.return_value.__enter__.return_value = mock_server
 
@@ -93,4 +99,4 @@ def test_send_email_multiple_recipients(mock_smtp, setup_env):
 
     # Verifica que el correo fue enviado a múltiples destinatarios
     mock_server.sendmail.assert_called_once()  # Verifica que sendmail se llama una vez
-    assert result is True
+    assert result is True  # Ajustado para verificar un booleano en lugar de una cadena

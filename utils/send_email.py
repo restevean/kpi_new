@@ -15,14 +15,20 @@ SMTP_PASSWORD = os.getenv("SMTP_PW")
 
 class EmailSender:
 
-    # TODO The parameters of the __init__ method are hardcoded and should be taken from environment variables. Perhaps
-    #  we can configure the class to use default values for parameters that are not passed when instantiating the class.
-    # TODO Should be a great idea to send as minimum one email, but as option, varioys separated by commas.
+    """
     def __init__(self):
         self.smtp_server = SMTP_SERVER
         self.smtp_port = SMTP_PORT
         self.username = SMTP_USERNAME
         self.password = SMTP_PASSWORD
+    """
+
+    def __init__(self, smtp_server=None, smtp_port=None, username=None, password=None):
+        self.smtp_server = smtp_server or os.getenv("SMTP_SERVER")
+        self.smtp_port = smtp_port or os.getenv("SMTP_PORT")
+        self.username = username or os.getenv("SMTP_USERNAME")
+        self.password = password or os.getenv("SMTP_PW")
+
 
     def send_email(self, from_addr: str, to_addrs: list[str], subject: str, body: str):
         if isinstance(to_addrs, str):
