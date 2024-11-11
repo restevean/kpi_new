@@ -16,23 +16,25 @@ SFTP_SERVER = os.getenv("SFTP_SERVER")
 SFTP_USER = os.getenv("SFTP_USER")
 SFTP_PW = os.getenv("SFTP_PW")
 SFTP_PORT = os.getenv("SFTP_PORT")
+SFTP_STAT_DIR = os.getenv("SFTP_STAT_DIR")
+SFTP_DEV_STAT_DIR = os.getenv("SFTP_DEV_STAT_DIR")
 
 
 class EstadoGruAne:
 
     def __init__(self):
+        self.entorno = ENTORNO
         self.host = SFTP_SERVER
         self.username = SFTP_USER
         self.password = SFTP_PW
         self.port = int(SFTP_PORT)
         self.local_work_directory = "../fixtures"
-        self.remote_work_directory = "/IN/STAT_TEST"
+        self.remote_work_directory = SFTP_STAT_DIR if self.entorno == "prod" else SFTP_DEV_STAT_DIR
         self.download_files()
         self.files = self.load_dir_files()
         self.email_from = "Estado Gruber Anexa"
         self.email_subject = "Gruber Estado"
         self.email_body = None
-        self.entorno = ENTORNO
         self.email_to = [EMAIL_TO, "restevean@gmail.com"] if (self.entorno == "prod"
                                                               and EMAIL_TO) else ["restevean@gmail.com"]
 
