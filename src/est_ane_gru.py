@@ -20,11 +20,18 @@ class EstadoAneGru:
         pass
 
 """
+def referencias quitar de bymaster_api.py
+def cabecera_albaran_entrada quitar 
+def referencias_propietarios quitar
+
+consulta_ query
 Les comunicamos lo que ellos nos han enviado IMPORTACIÓN
 tomamos su chit y devolvemos su edi
 
 Recorremos la BBDD cada 5 minutos
 Si encontramos algún hito porterior a nuestro último hito de comunicación
+
+post_partida_tracking
 
 Si obtengo datos, es decir partidas pendioentes de comunicar:
 lanzo consulta por partida y comunico:
@@ -34,5 +41,6 @@ Comunicación:
 @HP00
 Q00
 Compopnemos la línea q10
+
 
 """

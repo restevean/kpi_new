@@ -60,13 +60,13 @@ def test_send_email_failure(mock_smtp, setup_env):
         body="This is a test email."
     )
 
-    # Verifica que el método devuelve False al fallar el envío
+    # Verifica que el method devuelve False al fallar el envío
     assert result is False
 
 
 @patch("smtplib.SMTP_SSL")
 def test_send_email_with_string_recipient(mock_smtp, setup_env):
-    # Verifica que el método maneja un destinatario único en formato string
+    # Verifica que el method maneja un destinatario único en formato string
     mock_server = MagicMock()
     mock_smtp.return_value.__enter__.return_value = mock_server
 
@@ -85,7 +85,7 @@ def test_send_email_with_string_recipient(mock_smtp, setup_env):
 
 @patch("smtplib.SMTP_SSL")
 def test_send_email_multiple_recipients(mock_smtp, setup_env):
-    # Verifica que el método maneja múltiples destinatarios correctamente
+    # Verifica que el method maneja múltiples destinatarios correctamente
     mock_server = MagicMock()
     mock_smtp.return_value.__enter__.return_value = mock_server
 

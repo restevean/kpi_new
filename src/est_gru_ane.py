@@ -64,7 +64,7 @@ class EstadoGruAne:
                 n_sftp.sftp.get(file, local_path)
         n_sftp.disconnect()
 
-
+    # TODO Update conversion dictionary. There are missing items
     @staticmethod
     def get_cod_hito(status):
         status_map = {
