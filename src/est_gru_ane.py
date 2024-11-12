@@ -39,7 +39,7 @@ class EstadoGruAne:
                                                               and EMAIL_TO) else ["restevean@gmail.com"]
 
     def load_dir_files(self):
-        files_in_dir = {
+        return {
             file: {
                 "success": False,
                 "message": "",
@@ -47,8 +47,6 @@ class EstadoGruAne:
             for file in os.listdir(self.local_work_directory)
             if os.path.isfile(os.path.join(self.local_work_directory, file))
         }
-        print(files_in_dir)
-        return files_in_dir
 
 
     def download_files(self):
@@ -62,7 +60,7 @@ class EstadoGruAne:
         for file in n_sftp.sftp.listdir():
             if n_sftp.sftp.stat(file).st_mode & 0o170000 == 0o100000:  # Verifica si es un archivo regular
                 local_path = os.path.join(self.local_work_directory, file)
-                print(f"Descargando {file} a {local_path}")
+                # print(f"Descargando {file} a {local_path}")
                 n_sftp.sftp.get(file, local_path)
         n_sftp.disconnect()
 
@@ -90,16 +88,15 @@ class EstadoGruAne:
                 n_ref_cor = lineas.get("Consignment number sending depot")
                 n_status = lineas.get("Status code")
                 m_query = f"select ipda, * from trapda where nrefcor ='{n_ref_cor}'"
-                print(m_query)  # Para depuración; elimina en producción
+                # print(m_query)  # Para depuración; elimina en producción
                 query_reply = bm.consulta_(m_query)
-                print(query_reply)  # Para depuración; elimina en producción
+                # print(query_reply)  # Para depuración; elimina en producción
 
                 # Verifica si el contenido está vacío y actualiza el mensaje si es así
                 if "contenido" in query_reply and not query_reply["contenido"]:
                     # Caso de `contenido == {}`
-                    # self.files[file_key]["message"] = f"\nNO Creada partida, corresponsal {n_ref_cor}"
                     self.files[file_key]["success"] = False
-                elif "contenido" in query_reply and query_reply["contenido"]:
+                elif "contenido" in query_reply:
                     # Procesa el contenido si no está vacío
                     record = query_reply["contenido"][0]
                     n_ipda = record.get("ipda")
@@ -120,10 +117,8 @@ class EstadoGruAne:
                     # self.update_file_status(file_key, tracking_reply["status_code"], n_hito, n_cpda)
                 else:
                     # Si no hay contenido o error, actualiza el mensaje adecuadamente
-                    # self.files[file_key]["message"] = f"\nNO Creada partida, corresponsal {n_ref_cor}"
                     self.files[file_key]["success"] = False
-
-                print(f"El ipda es: {n_ipda if 'n_ipda' in locals() else 'None'}")
+                # print(f"El ipda es: {n_ipda if 'n_ipda' in locals() else 'None'}")
 
 
     @staticmethod
@@ -136,7 +131,6 @@ class EstadoGruAne:
         }
 
     def update_file_status(self, file_key, status_code, n_hito, n_cpda):
-        """Actualiza el estado del archivo en función de la respuesta del tracking."""
         if status_code == 201:
             self.files[file_key]["success"] = True
             self.files[file_key]["message"] += f"\nCreada partida, hito {n_hito}-{n_cpda}"
@@ -149,7 +143,6 @@ class EstadoGruAne:
 
     def run(self):
         email_sender = EmailSender()
-
         n_sftp = SftpConnection()
         n_sftp.connect()
 
@@ -157,7 +150,7 @@ class EstadoGruAne:
             local_path = os.path.join(self.local_work_directory, file_name)
             self.file_process(local_path)
 
-            # Obtén los valores actualizados de file_attrs después de file_process
+            # Obtiene los valores actualizados de file_attrs después de file_process()
             file_attrs = self.files[file_name]
 
             remote_dir = f"{self.remote_work_directory}/OK" if file_attrs["success"] else f"{self.remote_work_directory}/ERROR"
@@ -167,17 +160,13 @@ class EstadoGruAne:
             target_dir = os.path.join(self.local_work_directory, "success" if file_attrs["success"] else "fail")
             os.makedirs(target_dir, exist_ok=True)  # Crea el directorio si no existe
             os.rename(local_path, os.path.join(target_dir, file_name))
-
             self.email_body = (
                 f'{file_attrs["message"]}\nArchivo: {file_name}'
                 if file_attrs.get("message")
                 else f"No se crearon partidas para el archivo: {file_name}"
             )
-
-            # self.email_body = f"{self.files[file_name.rsplit("/", 1)[-1]]["message"]}\nArchivo: {file_name}"
-            print(f"Email body: {self.email_body}")
+            # print(f"Email body: {self.email_body}")
             email_sender.send_email(self.email_from, self.email_to, self.email_subject, self.email_body)
-
         n_sftp.disconnect()
 
 

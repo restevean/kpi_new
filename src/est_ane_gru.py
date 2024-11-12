@@ -1,3 +1,4 @@
+import os
 
 
 
@@ -6,12 +7,17 @@
 class EstadoAneGru:
 
     def __init__(self):
-        self.ultimo_hito_comunicacion = None
+        self.ultimo_hito_comunicacion = self.get_ultimo_hito_comunicacion()
         self.query_partidas = None
         self.query_num_partidas = None
 
 
+    def get_ultimo_hito_comunicacion(self):
+        return self.ultimo_hito_comunicacion
 
+
+    def genera_archivo(self):
+        pass
 
 """
 Les comunicamos lo que ellos nos han enviado IMPORTACIÓN
