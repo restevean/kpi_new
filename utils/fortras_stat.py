@@ -24,9 +24,9 @@ class MensajeEstado:
         self.contenido+="\n"
 
     def header_q00(self):
-        self.contenido+="Q00" #recordType
-        self.contenido+="100" #releaseVersion
-        self.contenido+="G01"#codeList
+        self.contenido+="Q00" # recordType
+        self.contenido+="100" # releaseVersion
+        self.contenido+="G01" # codeList
         self.contenido+=self.rellenar(texto="GRUVR", ntotal=35) #consignorId
         self.contenido+=self.rellenar(texto="ANEXA", ntotal=35)#consigneeId
         self.contenido+=self.rellenar(texto="GRUVR", ntotal=35)#causingPartyId
