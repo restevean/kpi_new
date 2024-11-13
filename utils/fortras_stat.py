@@ -22,6 +22,7 @@ class MensajeEstado:
         self.contenido+='  GRUBERV'
         self.contenido+=' '
         self.contenido+="\n"
+        return self.contenido
 
     def header_q00(self):
         self.contenido+="Q00" # recordType
@@ -33,6 +34,25 @@ class MensajeEstado:
         #routingId1
         #routingId2
         self.contenido+="\n"
+        return self.contenido
+    """
+    def process_q10_line(self, q10_line):
+        self.contenido+="Q10"
+        self.contenido+=self.rellenar(ntotal=35, texto="") # consignmentNumberSendingDepot
+        self.contenido+=self.rellenar(ntotal=35, texto="") # consignmentNumberSendingDepot --> nrefcor
+        self.contenido+=self.rellenar(ntotal=35, texto="") # pickupOrderNumber
+        self.contenido+=self.rellenar(q10_line["Status code"]) # status code
+        self.contenido+=dt.strftime(q10_line["Date of event"], "%d%m%Y") # dateOfEvent
+        self.contenido+=dt.strftime(q10_line["Time of event"], "%H%M")
+        self.contenido+=self.rellenar(ntotal=35, texto="") # consignmentNumberDeliveringParty
+        self.contenido+=self.rellenar(ntotal=4, texto="") # waitDowntimeMinutes
+        self.contenido+=self.rellenar(ntotal=35, texto="") # nameOfAcknowledgingParty
+        self.contenido+=self.rellenar(ntotal=70, texto="") # additionalText
+        self.contenido+=self.rellenar(ntotal=12, texto="") # referenceNumber
+        self.contenido+="\n"
+        return self.contenido
+        """
+
 
     # TODO Este método usa la propiedad 'partida'
     def consigment_level(self, status='000'):
@@ -61,10 +81,12 @@ class MensajeEstado:
         self.contenido+= "000004" #Length 000004
         self.contenido+=ahora_str
         self.contenido+="\n"
+        return self.contenido
 
     def cierre(self):
         """@@PT"""
         self.contenido+="@@PT"
+        return self.contenido
 
     @staticmethod
     def rellenar(ntotal=10, relleno=' ', texto='', ladorelleno='r'):

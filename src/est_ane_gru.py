@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-# from utils.load_env_base import load_env_base
+from utils.fortras_stat import MensajeEstado as Fort
 from utils.bmaster_api import BmasterApi as BmApi
 import pandas as pd
 
@@ -27,9 +27,9 @@ class EstadoAneGru:
         self.port = int(SFTP_PORT)
         self.local_work_directory = "../fixtures"
         self.remote_work_directory = SFTP_STAT_DIR if self.entorno == "prod" else SFTP_DEV_STAT_DIR
-        self.partidas = None
+        self.communication_pending = None
         self.query_partidas = """
-        SELECT TOP 20 
+        SELECT TOP 4 
             itrk, aebtrk.ihit, aebhit.chit, aebhit.dhit, maxitrk, aebtrk.fmod, aebtrk.hmod, 
             aebtrk.fhit, aebtrk.hhit, trapda.cpda, trapda.ipda, nrefcor
         FROM 
@@ -63,22 +63,37 @@ class EstadoAneGru:
         ORDER BY 
             ipda, itrk ASC;
         """
-
         # TODO Update conversion dictionary. There are missing items
-
-    @staticmethod
-    def get_cod_hito(status):
-        status_map = {
+        self.conversion_dict = {
             "ENT001": "001",
             "DESCARFAL": "002",
             "DESCARKO": "003",
             "SAL001": "SPC",
-            "ANXE05": "COR"
+            "ANXE05": "COR",
+            "TRA0102": "T01",   # Para test
+            "ANXE02": "T02"     # Para test
         }
-        return status_map.get(status)
 
-    def genera_archivo(self):
-        pass
+    @staticmethod
+    def genera_archivo(q10_lines):
+        number_of_records = len(q10_lines) + 2
+        fortras = Fort()
+        txt_file_dict = fortras.header()
+        txt_file_dict = fortras.header_q00()
+        for q10_line in q10_lines:
+            pass
+        txt_file_dict = fortras.z_control_record()
+        txt_file_dict = fortras.cierre()
+        print(txt_file_dict)
+        return txt_file_dict
+
+
+    def write_txt_file(self, txt_file):
+        """Write the txt file"""
+        # TODO Whicha name must have the file?
+        with open(f"{self.local_work_directory}/estado_ane_gru", "w") as f:
+            f.write(txt_file)
+        return True
 
     def run(self):
         bm = BmApi()
@@ -92,6 +107,48 @@ class EstadoAneGru:
 if __name__ == "__main__":
     estado_ane_gru = EstadoAneGru()
     estado_ane_gru.run()
+    file_contents = estado_ane_gru.genera_archivo(
+        {
+            1: {
+                "record_type": "Q10",
+                "Consignment number sending depot": " " * 35,
+                "Consignment number receiving depot": " " * 35,
+                "Pick-up order number": " " * 35,
+                "Status code": "001",                               # Mandatory
+                "Date of event": "20241110",                           # Mandatory
+                "Time of event (HHMM)": "1921 ",                    # Mandatory
+                "Consignment number delivering party": " " * 35,
+                "Wait/Downtime in minutes": " " * 4,
+                "Name of acknowledg-ing party": " " * 35,
+                "Additional text": " " * 70,
+                "Reference number": " " * 12,
+                "Latitude (Lat)": " " * 11,
+                "Longitude (Lon)": " " * 11
+                },
+            2: {
+                "record_type": "Q10",
+                "Consignment number sending depot": " " * 35,
+                "Consignment number receiving depot": " " * 35,
+                "Pick-up order number": " " * 35,
+                "Status code": "003",                               # Mandatory
+                "Date of event": "20241110",                           # Mandatory
+                "Time of event (HHMM)": "2021",                    # Mandatory
+                "Consignment number delivering party": " " * 35,
+                "Wait/Downtime in minutes": " " * 4,
+                "Name of acknowledg-ing party": " " * 35,
+                "Additional text": " " * 70,
+                "Reference number": " " * 12,
+                "Latitude (Lat)": " " * 11,
+                "Longitude (Lon)": " " * 11
+                }
+        }
+    )
+    estado_ane_gru.write_txt_file(file_contents)
+
+
+
+
+
 
 """
 consulta_ query
