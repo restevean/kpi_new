@@ -83,8 +83,8 @@ class GetToken:
 
             # Esperamos 10 segundos antes de reintentar
             intento += 1
-            print(f"Esperando 15 segundos antes de reintentar... ({intento}/3)")
-            time.sleep(10)
+            print(f"Esperando 3 segundos antes de reintentar... ({intento}/3)")
+            time.sleep(3)
 
         print("Se han realizado 10 intentos fallidos, interrumpiendo el programa.")
         return None
