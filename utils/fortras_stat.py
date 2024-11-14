@@ -6,55 +6,41 @@ class MensajeEstado:
     def __init__(self):
         self.contenido=""
 
-    def header (self):
-        self.contenido+='@@PH'
-        self.contenido+='STAT512'
-        self.contenido+=' '
-        self.contenido+='0512'
-        self.contenido+='  '
-        self.contenido+='35'
-        self.contenido+='  '
-        self.contenido+='1'
-        self.contenido+=' '
-        self.contenido+='7'
-        self.contenido+=' '
-        self.contenido+='  ANEXA'
-        self.contenido+='  GRUBERV'
-        self.contenido+=' '
-        self.contenido+="\n"
-        return self.contenido
+    def header(self, action=None):
+        m_string = '@@PH' + 'STAT512'
+        m_string += ' '
+        m_string += '0512'
+        m_string += '  '
+        m_string += '35'
+        m_string += '  '
+        m_string += '1'
+        m_string += ' '
+        m_string += '7'
+        m_string += ' '
+        m_string += '  ANEXA'
+        m_string += '  GRUBERV'
+        m_string += ' '
+        m_string +="\n"
+        if action == "w":
+            return m_string
+        else:
+            self.contenido += m_string
 
-    def header_q00(self):
-        self.contenido+="Q00" # recordType
-        self.contenido+="100" # releaseVersion
-        self.contenido+="G01" # codeList
-        self.contenido+=self.rellenar(texto="GRUVR", ntotal=35) #consignorId
-        self.contenido+=self.rellenar(texto="ANEXA", ntotal=35)#consigneeId
-        self.contenido+=self.rellenar(texto="GRUVR", ntotal=35)#causingPartyId
-        #routingId1
-        #routingId2
-        self.contenido+="\n"
-        return self.contenido
-    """
-    def process_q10_line(self, q10_line):
-        self.contenido+="Q10"
-        self.contenido+=self.rellenar(ntotal=35, texto="") # consignmentNumberSendingDepot
-        self.contenido+=self.rellenar(ntotal=35, texto="") # consignmentNumberSendingDepot --> nrefcor
-        self.contenido+=self.rellenar(ntotal=35, texto="") # pickupOrderNumber
-        self.contenido+=self.rellenar(q10_line["Status code"]) # status code
-        self.contenido+=dt.strftime(q10_line["Date of event"], "%d%m%Y") # dateOfEvent
-        self.contenido+=dt.strftime(q10_line["Time of event"], "%H%M")
-        self.contenido+=self.rellenar(ntotal=35, texto="") # consignmentNumberDeliveringParty
-        self.contenido+=self.rellenar(ntotal=4, texto="") # waitDowntimeMinutes
-        self.contenido+=self.rellenar(ntotal=35, texto="") # nameOfAcknowledgingParty
-        self.contenido+=self.rellenar(ntotal=70, texto="") # additionalText
-        self.contenido+=self.rellenar(ntotal=12, texto="") # referenceNumber
-        self.contenido+="\n"
-        return self.contenido
-        """
+    def header_q00(self, action=None):
+        m_string = "Q00" + "100"
+        m_string +="G01" # codeList
+        m_string +=self.rellenar(texto="GRUVR", ntotal=35) #consignorId
+        m_string +=self.rellenar(texto="ANEXA", ntotal=35)#consigneeId
+        m_string +=self.rellenar(texto="GRUVR", ntotal=35)#causingPartyId
+        m_string +="\n"
+        if action == "w":
+            return m_string
+        else:
+            self.contenido += m_string
 
 
     # TODO Este método usa la propiedad 'partida'
+    """
     def consigment_level(self, status='000'):
         fechamov=dt.strptime(self.partida["fmov"],"%Y-%m-%dT%H:%M:%S")
         horamov=dt.strptime(self.partida["hmov"],"%H:%M:%S")
@@ -72,21 +58,25 @@ class MensajeEstado:
         self.contenido+=self.rellenar(ntotal=70,texto="") # additionalText
         self.contenido+=self.rellenar(ntotal=12,texto="") # referenceNumber
         self.contenido+="\n"
+        """
 
-    def z_control_record(self):
-        """Para el control del archivo"""
+    def z_control_record(self, records=None):
         hoy=dt.now()
         ahora_str=dt.strftime(hoy.now(),"%d%m%Y%H%M%S")
-        self.contenido+="Z00" #Field reference
-        self.contenido+= "000004" #Length 000004
-        self.contenido+=ahora_str
-        self.contenido+="\n"
-        return self.contenido
+        m_string = "Z00" + (str(records).zfill(6) if records else "000004")
+        m_string +=ahora_str
+        m_string +="\n"
+        if records:
+            return m_string
+        else:
+            self.contenido -= m_string
 
-    def cierre(self):
-        """@@PT"""
-        self.contenido+="@@PT"
-        return self.contenido
+    def cierre(self, action=None):
+        if action == "w":
+            return "@@PT"
+        else:
+            self.contenido+="@@PT"
+
 
     @staticmethod
     def rellenar(ntotal=10, relleno=' ', texto='', ladorelleno='r'):

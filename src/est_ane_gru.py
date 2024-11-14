@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from utils.fortras_stat import MensajeEstado as Fort
 from utils.bmaster_api import BmasterApi as BmApi
+from utils.compose_q10_line import compose_q10_line as composeQ10
 import pandas as pd
 
 load_dotenv(dotenv_path="../conf/.env.base")
@@ -29,7 +30,7 @@ class EstadoAneGru:
         self.remote_work_directory = SFTP_STAT_DIR if self.entorno == "prod" else SFTP_DEV_STAT_DIR
         self.communication_pending = None
         self.query_partidas = """
-        SELECT TOP 4 
+        SELECT TOP 6
             itrk, aebtrk.ihit, aebhit.chit, aebhit.dhit, maxitrk, aebtrk.fmod, aebtrk.hmod, 
             aebtrk.fhit, aebtrk.hhit, trapda.cpda, trapda.ipda, nrefcor
         FROM 
@@ -74,76 +75,67 @@ class EstadoAneGru:
             "ANXE02": "T02"     # Para test
         }
 
-    @staticmethod
-    def genera_archivo(q10_lines):
-        number_of_records = len(q10_lines) + 2
+    def genera_archivo(self, cpda, q10_lines):
+        number_of_records = len(q10_lines)
         fortras = Fort()
-        txt_file_dict = fortras.header()
-        txt_file_dict = fortras.header_q00()
+        txt_file_dict = fortras.header("w")
+        txt_file_dict += fortras.header_q00("w")
         for q10_line in q10_lines:
-            pass
-        txt_file_dict = fortras.z_control_record()
-        txt_file_dict = fortras.cierre()
+            txt_file_dict += composeQ10(status_code=self.conversion_dict[q10_line["status_code"]],
+            date_of_event=q10_line["date_of_event"],
+                       time_of_event=q10_line["time_of_event"])
+        txt_file_dict += fortras.z_control_record(number_of_records)
+        txt_file_dict += fortras.cierre("w")
+        self.write_txt_file(cpda, txt_file_dict)
         print(txt_file_dict)
         return txt_file_dict
 
 
-    def write_txt_file(self, txt_file):
+    def write_txt_file(self, cpda, txt_file):
         """Write the txt file"""
         # TODO Whicha name must have the file?
-        with open(f"{self.local_work_directory}/estado_ane_gru", "w") as f:
+        with open(f"{self.local_work_directory}/State-{cpda}", "w") as f:
             f.write(txt_file)
         return True
+
+
+    def process_query_response(self, query_reply):
+        cpda_groups = {}
+
+        for entry in query_reply.get("contenido", []):
+            cpda = entry.get("cpda")
+            chit = entry.get("chit")
+            fhit = entry.get("fhit")
+            hhit = entry.get("hhit")
+
+            event_data = {
+                "status_code": chit,
+                "date_of_event": fhit,
+                "time_of_event": hhit
+            }
+
+            if cpda not in cpda_groups:
+                cpda_groups[cpda] = []
+            cpda_groups[cpda].append(event_data)
+
+        for cpda, events in cpda_groups.items():
+            self.genera_archivo(cpda, events)
 
     def run(self):
         bm = BmApi()
         query_reply = bm.consulta_(self.query_partidas)
+        print(query_reply)
         # Convertir los datos a un DataFrame de pandas
         df = pd.DataFrame(query_reply['contenido'])
         # Imprimir el DataFrame como tabla
         print(df.to_markdown(index=False))
+        self.process_query_response(query_reply)
 
 
 if __name__ == "__main__":
     estado_ane_gru = EstadoAneGru()
     estado_ane_gru.run()
-    file_contents = estado_ane_gru.genera_archivo(
-        {
-            1: {
-                "record_type": "Q10",
-                "Consignment number sending depot": " " * 35,
-                "Consignment number receiving depot": " " * 35,
-                "Pick-up order number": " " * 35,
-                "Status code": "001",                               # Mandatory
-                "Date of event": "20241110",                           # Mandatory
-                "Time of event (HHMM)": "1921 ",                    # Mandatory
-                "Consignment number delivering party": " " * 35,
-                "Wait/Downtime in minutes": " " * 4,
-                "Name of acknowledg-ing party": " " * 35,
-                "Additional text": " " * 70,
-                "Reference number": " " * 12,
-                "Latitude (Lat)": " " * 11,
-                "Longitude (Lon)": " " * 11
-                },
-            2: {
-                "record_type": "Q10",
-                "Consignment number sending depot": " " * 35,
-                "Consignment number receiving depot": " " * 35,
-                "Pick-up order number": " " * 35,
-                "Status code": "003",                               # Mandatory
-                "Date of event": "20241110",                           # Mandatory
-                "Time of event (HHMM)": "2021",                    # Mandatory
-                "Consignment number delivering party": " " * 35,
-                "Wait/Downtime in minutes": " " * 4,
-                "Name of acknowledg-ing party": " " * 35,
-                "Additional text": " " * 70,
-                "Reference number": " " * 12,
-                "Latitude (Lat)": " " * 11,
-                "Longitude (Lon)": " " * 11
-                }
-        }
-    )
-    estado_ane_gru.write_txt_file(file_contents)
+
 
 
 
