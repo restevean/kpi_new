@@ -1,5 +1,4 @@
-
-
+# TODO Include this function as a method in fortras
 def compose_q10_line(**kwargs):
     # Definimos los campos con sus valores por defecto (rellenos de espacios) y anchos específicos
     fields = {
