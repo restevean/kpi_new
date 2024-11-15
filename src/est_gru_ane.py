@@ -72,7 +72,9 @@ class EstadoGruAne:
             "002": "DESCARFAL",
             "003": "DESCARKO",
             "SPC": "SAL001",
-            "COR": "ANXE05"
+            "COR": "ANXE05",
+            "T01": "TRA0102",
+            "T02": "ANXE02"
         }
         return status_map.get(status)
 
