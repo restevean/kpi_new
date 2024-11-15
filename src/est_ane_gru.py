@@ -4,6 +4,7 @@ from utils.fortras_stat import MensajeEstado as Fort
 from utils.bmaster_api import BmasterApi as BmApi
 from utils.compose_q10_line import compose_q10_line as composeQ10
 import pandas as pd
+from datetime import datetime
 
 load_dotenv(dotenv_path="../conf/.env.base")
 ENTORNO = os.getenv("ENTORNO")
@@ -32,7 +33,8 @@ class EstadoAneGru:
         self.local_work_directory = "../fixtures"
         self.remote_work_out_directory = SFTP_STAT_OUT_DIR if self.entorno == "prod" else SFTP_DEV_STAT_OUT_DIR
         self.remote_work_in_directory = SFTP_STAT_IN_DIR if self.entorno == "prod" else SFTP_DEV_STAT_IN_DIR
-        self.communication_pending = None
+        # self.communication_pending = None
+        self.partidas = None
         self.query_partidas = """
         SELECT TOP 15
             itrk, aebtrk.ihit, aebhit.chit, aebhit.dhit, maxitrk, aebtrk.fmod, aebtrk.hmod, 
@@ -68,7 +70,6 @@ class EstadoAneGru:
         ORDER BY 
             ipda, itrk ASC;
         """
-        # TODO Update conversion dictionary. There are missing items
         self.conversion_dict = {
             "ANXE01": "TBD",
             "ANXE02": "TBD",
@@ -110,15 +111,14 @@ class EstadoAneGru:
 
 
     def write_txt_file(self, cpda, txt_file):
-        """Write the txt file"""
-        # TODO Whicha name must have the file?
-        with open(f"{self.local_work_directory}/State-{cpda}", "w") as f:
+        with open(f"{self.local_work_directory}/STATE-{cpda}-{datetime.now().strftime('%Y%m%d%H%M')}", "w") as f:
             f.write(txt_file)
         return True
 
 
     def process_query_response(self, query_reply):
-        cpda_groups = {}
+        # cpda_groups = {}
+        self.partidas = {}
 
         for entry in query_reply.get("contenido", []):
             cpda = entry.get("cpda")
@@ -132,11 +132,15 @@ class EstadoAneGru:
                 "time_of_event": hhit
             }
 
-            if cpda not in cpda_groups:
-                cpda_groups[cpda] = []
-            cpda_groups[cpda].append(event_data)
+            # if cpda not in cpda_groups:
+            if cpda not in self.partidas:
+                # cpda_groups[cpda] = []
+                self.partidas[cpda] = []
+            # cpda_groups[cpda].append(event_data)
+            self.partidas[cpda].append(event_data)
 
-        for cpda, events in cpda_groups.items():
+        # for cpda, events in cpda_groups.items():
+        for cpda, events in self.partidas.items():
             self.genera_archivo(cpda, events)
 
     def run(self):
@@ -159,4 +163,6 @@ x 2. Cambiamos el chit y los convertimos a su edi
 x 3. Procesamos los resultados y escribimos un archivo formato txt por partida con tantas Q10 como itrk de esa partida
 4. Subimos los archivos al SFTP de gru
 5. Por cada partida usamos post_partida_tracking para asignarle el ihit a 647
+6. Repesca? si guardamos el último itrk max. de la última consulta, la siguiente consulta la hacemos a partir de ese 
+    itrk+1 cuyos hitos no sean 647, ¿no?
 """
