@@ -14,8 +14,11 @@ SFTP_SERVER = os.getenv("SFTP_SERVER")
 SFTP_USER = os.getenv("SFTP_USER")
 SFTP_PW = os.getenv("SFTP_PW")
 SFTP_PORT = os.getenv("SFTP_PORT")
-SFTP_STAT_DIR = os.getenv("SFTP_STAT_DIR")
-SFTP_DEV_STAT_DIR = os.getenv("SFTP_DEV_STAT_DIR")
+SFTP_STAT_IN_DIR = os.getenv("SFTP_STAT_IN_DIR")
+SFTP_DEV_STAT_IN_DIR = os.getenv("SFTP_DEV_STAT_IN_DIR")
+SFTP_STAT_OUT_DIR = os.getenv("SFTP_STAT_OUT_DIR")
+SFTP_DEV_STAT_OUT_DIR = os.getenv("SFTP_DEV_STAT_OUT_DIR")
+
 
 
 class EstadoAneGru:
@@ -27,10 +30,11 @@ class EstadoAneGru:
         self.password = SFTP_PW
         self.port = int(SFTP_PORT)
         self.local_work_directory = "../fixtures"
-        self.remote_work_directory = SFTP_STAT_DIR if self.entorno == "prod" else SFTP_DEV_STAT_DIR
+        self.remote_work_out_directory = SFTP_STAT_OUT_DIR if self.entorno == "prod" else SFTP_DEV_STAT_OUT_DIR
+        self.remote_work_in_directory = SFTP_STAT_IN_DIR if self.entorno == "prod" else SFTP_DEV_STAT_IN_DIR
         self.communication_pending = None
         self.query_partidas = """
-        SELECT TOP 6
+        SELECT TOP 15
             itrk, aebtrk.ihit, aebhit.chit, aebhit.dhit, maxitrk, aebtrk.fmod, aebtrk.hmod, 
             aebtrk.fhit, aebtrk.hhit, trapda.cpda, trapda.ipda, nrefcor
         FROM 
@@ -66,14 +70,28 @@ class EstadoAneGru:
         """
         # TODO Update conversion dictionary. There are missing items
         self.conversion_dict = {
-            "ENT001": "001",
-            "DESCARFAL": "002",
-            "DESCARKO": "003",
-            "SAL001": "SPC",
+            "ANXE01": "TBD",
+            "ANXE02": "TBD",
             "ANXE05": "COR",
-            "TRA0102": "T01",   # Para test
-            "ANXE02": "T02"     # Para test
-        }
+            "ANXE06": "COR",
+            "ANXE07": "CRI",
+            "ANXE09": "COR",
+            "ANXE11": "302",
+            "ANXE12": "CRI",
+            "DESCARFAL": "SMA",
+            "DESCARFTOT": "SMA",
+            "DESCARKO": "SMA",
+            "DESCAROK": "SMA",
+            "ENT001": "SMA",
+            "ENT004": "SMA",
+            "ENT011": "SMA",
+            "LINTRK02": "CRI",
+            "SAL001": "402",
+            "TRA0081": "202",
+            "TRA0102": "402",
+            "TRA0106": "COR"
+            }
+
 
     def genera_archivo(self, cpda, q10_lines):
         number_of_records = len(q10_lines)
@@ -124,7 +142,6 @@ class EstadoAneGru:
     def run(self):
         bm = BmApi()
         query_reply = bm.consulta_(self.query_partidas)
-        print(query_reply)
         # Convertir los datos a un DataFrame de pandas
         df = pd.DataFrame(query_reply['contenido'])
         # Imprimir el DataFrame como tabla
@@ -136,30 +153,10 @@ if __name__ == "__main__":
     estado_ane_gru = EstadoAneGru()
     estado_ane_gru.run()
 
-
-
-
-
-
-
 """
-consulta_ query
-Les comunicamos lo que ellos nos han enviado IMPORTACIÓN
-tomamos su chit y devolvemos su edi
-
-Recorremos la BBDD cada 5 minutos
-Si encontramos algún hito porterior a nuestro último hito de comunicación
-
-post_partida_tracking
-
-Si obtengo datos, es decir partidas pendioentes de comunicar:
-lanzo consulta por partida y comunico:
-
-Comunicación:
-=============
-@HP00
-Q00
-Compopnemos la línea q10
-
-
+x 1. Lanzamos la consulta consulta_(query)
+x 2. Cambiamos el chit y los convertimos a su edi
+x 3. Procesamos los resultados y escribimos un archivo formato txt por partida con tantas Q10 como itrk de esa partida
+4. Subimos los archivos al SFTP de gru
+5. Por cada partida usamos post_partida_tracking para asignarle el ihit a 647
 """

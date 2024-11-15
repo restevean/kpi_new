@@ -10,7 +10,7 @@ def estado_gru_ane():
     """Fixture to initialise an instance of EstadoGruAne."""
     return EstadoGruAne()
 
-
+# TODO Fix this test, is tailing
 @patch("src.est_gru_ane.SftpConnection")
 @patch("src.est_gru_ane.EmailSender")
 @patch("src.est_gru_ane.state.MensajeEstado")

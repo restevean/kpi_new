@@ -23,23 +23,22 @@ class MensajeEstado:
         m_string += "\n"
         if action == "w":
             return m_string
-        else:
-            self.contenido += m_string
+        self.contenido += m_string
 
 
     def header_q00(self, action=None):
         m_string = "Q00" + "100"
         m_string += "G01" # codeList
-        m_string += self.rellenar(texto="GRUVR", ntotal=35) #consignorId
-        m_string += self.rellenar(texto="ANEXA", ntotal=35)#consigneeId
-        m_string += self.rellenar(texto="GRUVR", ntotal=35)#causingPartyId
+        m_string += self.rellenar(texto="GRUVR", n_total=35) #consignorId
+        m_string += self.rellenar(texto="ANEXA", n_total=35)#consigneeId
+        m_string += self.rellenar(texto="GRUVR", n_total=35)#causingPartyId
         m_string += "\n"
         if action == "w":
             return m_string
-        else:
-            self.contenido += m_string
+        self.contenido += m_string
 
 
+    # TODO No entiendo porqué "000004"
     def z_control_record(self, records=None):
         hoy=dt.now()
         ahora_str=dt.strftime(hoy.now(),"%d%m%Y%H%M%S")
@@ -48,22 +47,20 @@ class MensajeEstado:
         m_string += "\n"
         if records:
             return m_string
-        else:
-            self.contenido += m_string
+        self.contenido += m_string
 
 
     def cierre(self, action=None):
         if action == "w":
             return "@@PT"
-        else:
-            self.contenido += "@@PT"
+        self.contenido += "@@PT"
 
 
     @staticmethod
-    def rellenar(ntotal=10, relleno=' ', texto='', ladorelleno='r'):
-        return texto.ljust(ntotal - len(texto), relleno) if ladorelleno == "l" else texto.rjust(ntotal - len(texto),
+    def rellenar(n_total=10, char_relleno=' ', texto='', lado_relleno='r'):
+        return texto.ljust(n_total - len(texto), char_relleno) if lado_relleno == "l" else texto.rjust(n_total - len(texto),
+                                                                                                  char_relleno)
 
-                                                                                                relleno)
     # TODO Se usa para algo?
     def devolver_mensaje(self):
         return self.contenido

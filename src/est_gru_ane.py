@@ -16,8 +16,10 @@ SFTP_SERVER = os.getenv("SFTP_SERVER")
 SFTP_USER = os.getenv("SFTP_USER")
 SFTP_PW = os.getenv("SFTP_PW")
 SFTP_PORT = os.getenv("SFTP_PORT")
-SFTP_STAT_DIR = os.getenv("SFTP_STAT_DIR")
-SFTP_DEV_STAT_DIR = os.getenv("SFTP_DEV_STAT_DIR")
+SFTP_STAT_IN_DIR = os.getenv("SFTP_STAT_IN_DIR")
+SFTP_DEV_STAT_IN_DIR = os.getenv("SFTP_DEV_STAT_IN_DIR")
+SFTP_STAT_OUT_DIR = os.getenv("SFTP_STAT_OUT_DIR")
+SFTP_DEV_STAT_OUT_DIR = os.getenv("SFTP_DEV_STAT_OUT_DIR")
 
 
 class EstadoGruAne:
@@ -29,7 +31,8 @@ class EstadoGruAne:
         self.password = SFTP_PW
         self.port = int(SFTP_PORT)
         self.local_work_directory = "../fixtures"
-        self.remote_work_directory = SFTP_STAT_DIR if self.entorno == "prod" else SFTP_DEV_STAT_DIR
+        self.remote_work_out_directory = SFTP_STAT_OUT_DIR if self.entorno == "prod" else SFTP_DEV_STAT_OUT_DIR
+        self.remote_work_in_directory = SFTP_STAT_IN_DIR if self.entorno == "prod" else SFTP_DEV_STAT_IN_DIR
         self.download_files()
         self.files = self.load_dir_files()
         self.email_from = "Estado Gruber Anexa"
@@ -56,7 +59,7 @@ class EstadoGruAne:
         if not os.path.exists(self.local_work_directory):
             os.makedirs(self.local_work_directory)
 
-        n_sftp.sftp.chdir(self.remote_work_directory)
+        n_sftp.sftp.chdir(self.remote_work_out_directory)
         for file in n_sftp.sftp.listdir():
             if n_sftp.sftp.stat(file).st_mode & 0o170000 == 0o100000:  # Verifica si es un archivo regular
                 local_path = os.path.join(self.local_work_directory, file)
@@ -155,10 +158,10 @@ class EstadoGruAne:
             # Obtiene los valores actualizados de file_attrs después de file_process()
             file_attrs = self.files[file_name]
 
-            remote_dir = f"{self.remote_work_directory}/OK" if file_attrs["success"] else f"{self.remote_work_directory}/ERROR"
+            remote_dir = f"{self.remote_work_in_directory}/OK" if file_attrs["success"] else f"{self.remote_work_in_directory}/ERROR"
             remote_path = f"{remote_dir}/{file_name}"
             n_sftp.sftp.put(local_path, remote_path)
-            n_sftp.sftp.remove(f"{self.remote_work_directory}/{file_name}")
+            n_sftp.sftp.remove(f"{self.remote_work_out_directory}/{file_name}")
             target_dir = os.path.join(self.local_work_directory, "success" if file_attrs["success"] else "fail")
             os.makedirs(target_dir, exist_ok=True)  # Crea el directorio si no existe
             os.rename(local_path, os.path.join(target_dir, file_name))
