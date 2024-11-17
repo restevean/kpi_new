@@ -1,4 +1,5 @@
 import os
+from datetime import timezone
 from dotenv import load_dotenv
 from utils.fortras_stat import MensajeEstado as Fort
 from utils.bmaster_api import BmasterApi as BmApi
@@ -35,6 +36,7 @@ class EstadoAneGru:
         self.remote_work_out_directory = SFTP_STAT_OUT_DIR if self.entorno == "prod" else SFTP_DEV_STAT_OUT_DIR
         self.remote_work_in_directory = SFTP_STAT_IN_DIR if self.entorno == "prod" else SFTP_DEV_STAT_IN_DIR
         self.partidas = None
+        self.bm = BmApi()
         self.query_partidas = """
         SELECT TOP 15
             itrk, aebtrk.ihit, aebhit.chit, aebhit.dhit, maxitrk, aebtrk.fmod, aebtrk.hmod, 
@@ -135,11 +137,13 @@ class EstadoAneGru:
             f.write(content)
         return local_file_path  # Devolver la ruta completa del archivo creado
 
+
     def process_query_response(self, query_reply):
         self.partidas = {}
 
         for entry in query_reply.get("contenido", []):
             cpda = entry.get("cpda")
+            ipda = entry.get("ipda")  # Obtener ipda
             chit = entry.get("chit")
             fhit = entry.get("fhit")
             hhit = entry.get("hhit")
@@ -151,10 +155,14 @@ class EstadoAneGru:
             }
 
             if cpda not in self.partidas:
-                self.partidas[cpda] = []
-            self.partidas[cpda].append(event_data)
+                self.partidas[cpda] = {
+                    'ipda': ipda,
+                    'events': []
+                }
+            self.partidas[cpda]['events'].append(event_data)
 
-        for cpda, events in self.partidas.items():
+        for cpda, data in self.partidas.items():
+            events = data['events']
             self.procesa_patida(cpda, events)
 
 
@@ -183,12 +191,43 @@ class EstadoAneGru:
             return False
 
 
+    def actualizar_comunicado(self):
+        for cpda, data in self.partidas.items():
+            if data.get('success') is True:
+                ipda = data.get('ipda')
+                if not ipda:
+                    print(f"No se encontró 'ipda' para cpda {cpda}")
+                    continue
+
+                # Usar datetime.now con zona horaria UTC
+                fechatracking = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+
+                tracking_data = {
+                    "codigohito": "647",
+                    "descripciontracking": "Comunicado",
+                    "fechatracking": fechatracking
+                }
+
+                response = self.bm.post_partida_tracking(ipda, tracking_data)
+
+                # Manejo de la respuesta
+                if not isinstance(response, dict) or 'status_code' not in response:
+                    print(f"Error al actualizar el comunicado para ipda {ipda}: Respuesta inválida")
+                    continue
+
+                if response['status_code'] not in [200, 201]:
+                    print(
+                        f"Error al actualizar el comunicado para ipda {ipda}: Código de estado {response['status_code']}")
+                else:
+                    print(f"Comunicado actualizado exitosamente para ipda {ipda}")
+
+
     def run(self):
-        bm = BmApi()
-        query_reply = bm.consulta_(self.query_partidas)
+        query_reply = self.bm.consulta_(self.query_partidas)
         df = pd.DataFrame(query_reply['contenido'])
         print(df.to_markdown(index=False))
         self.process_query_response(query_reply)
+        self.actualizar_comunicado()
 
 
 if __name__ == "__main__":
@@ -200,7 +239,7 @@ x 1. Lanzamos la consulta consulta_(query)
 x 2. Cambiamos el chit y los convertimos a su edi
 x 3. Procesamos los resultados y escribimos un archivo formato txt por partida con tantas Q10 como itrk de esa partida
 x 4. Subimos los archivos al SFTP de gru
-5. Por cada partida usamos post_partida_tracking para asignarle el ihit a 647
+x 5. Por cada partida usamos post_partida_tracking para asignarle a cada ipda el ihit a 647
 6. Repesca? si guardamos el último itrk max. de la última consulta, la siguiente consulta la hacemos a partir de ese 
     itrk+1 cuyos hitos no sean 647, ¿no?
 """

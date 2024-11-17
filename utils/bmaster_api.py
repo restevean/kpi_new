@@ -260,6 +260,7 @@ class BmasterApi:
 
 
     def peticion_post(self,url, _json):
+        resp_dic = {}
         try:
             peticion=requests.post(url,json=_json,headers=self.headers)
             resp_dic = {"status_code": peticion.status_code, "contenido": peticion.json()}
