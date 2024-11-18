@@ -38,7 +38,7 @@ class EstadoAneGru:
         self.partidas = None
         self.bm = BmApi()
         self.query_partidas = """
-        SELECT TOP 15
+        SELECT TOP 10
             itrk, aebtrk.ihit, aebhit.chit, aebhit.dhit, maxitrk, aebtrk.fmod, aebtrk.hmod, 
             aebtrk.fhit, aebtrk.hhit, trapda.cpda, trapda.ipda, nrefcor
         FROM 
@@ -96,7 +96,7 @@ class EstadoAneGru:
             }
 
 
-    def procesa_patida(self, cpda, q10_lines):
+    def procesa_partida(self, cpda, q10_lines):
         number_of_records = len(q10_lines)
         fortras = Fort()
         txt_file_content = fortras.header("w")
@@ -109,7 +109,6 @@ class EstadoAneGru:
             )
         txt_file_content += fortras.z_control_record(number_of_records)
         txt_file_content += fortras.cierre("w")
-
         local_file_path = self.write_txt_file(cpda, txt_file_content)
         success = self.upload_file(local_file_path)
         if isinstance(self.partidas[cpda], list):
@@ -130,7 +129,6 @@ class EstadoAneGru:
 
 
     def write_txt_file(self, cpda, content):
-        # Generar el nombre del archivo con el formato especificado
         filename = f"STATE-{cpda}-{datetime.now().strftime('%Y%m%d%H%M')}.txt"
         local_file_path = os.path.join(self.local_work_directory, filename)
         with open(local_file_path, 'w') as f:
@@ -140,20 +138,17 @@ class EstadoAneGru:
 
     def process_query_response(self, query_reply):
         self.partidas = {}
-
         for entry in query_reply.get("contenido", []):
             cpda = entry.get("cpda")
             ipda = entry.get("ipda")  # Obtener ipda
             chit = entry.get("chit")
             fhit = entry.get("fhit")
             hhit = entry.get("hhit")
-
             event_data = {
                 "status_code": chit,
                 "date_of_event": fhit,
                 "time_of_event": hhit
             }
-
             if cpda not in self.partidas:
                 self.partidas[cpda] = {
                     'ipda': ipda,
@@ -163,7 +158,7 @@ class EstadoAneGru:
 
         for cpda, data in self.partidas.items():
             events = data['events']
-            self.procesa_patida(cpda, events)
+            self.procesa_partida(cpda, events)
 
 
     @staticmethod
@@ -175,7 +170,6 @@ class EstadoAneGru:
         sftp_pw = os.environ.get('SFTP_PW')
         sftp_port = int(os.environ.get('SFTP_PORT', 22))
         remote_file_path = f"{remote_directory}/{os.path.basename(local_file_path)}"
-
         try:
             transport = paramiko.Transport((sftp_server, sftp_port))
             transport.connect(username=sftp_user, password=sftp_pw)
@@ -184,9 +178,7 @@ class EstadoAneGru:
             sftp.close()
             transport.close()
             return True
-
         except Exception as e:
-            # Manejar excepciones según sea necesario
             print(f"Error al subir el archivo {local_file_path} mediante SFTP: {e}")
             return False
 
@@ -199,22 +191,16 @@ class EstadoAneGru:
                     print(f"No se encontró 'ipda' para cpda {cpda}")
                     continue
 
-                # Usar datetime.now con zona horaria UTC
                 fechatracking = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
-
                 tracking_data = {
-                    "codigohito": "647",
-                    "descripciontracking": "Comunicado",
+                    "codigohito": "ESTADOCOM",
+                    "descripciontracking": "ESTADO COMUNICADO",
                     "fechatracking": fechatracking
                 }
-
                 response = self.bm.post_partida_tracking(ipda, tracking_data)
-
-                # Manejo de la respuesta
                 if not isinstance(response, dict) or 'status_code' not in response:
                     print(f"Error al actualizar el comunicado para ipda {ipda}: Respuesta inválida")
                     continue
-
                 if response['status_code'] not in [200, 201]:
                     print(
                         f"Error al actualizar el comunicado para ipda {ipda}: Código de estado {response['status_code']}")
