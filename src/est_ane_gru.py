@@ -72,6 +72,39 @@ class EstadoAneGru:
         ORDER BY 
             ipda, itrk ASC;
         """
+        self.query_repesca = """
+        SELECT TOP 2000
+            trapda.cpda,
+            trapda.ipda,
+            nrefcor,
+            itrk,
+            aebtrk.ihit,
+            aebhit.chit,
+            aebhit.dhit,
+            aebtrk.fmod,
+            aebtrk.hmod,
+            aebtrk.fhit,
+            aebtrk.hhit
+        FROM
+            aebtrk
+        INNER JOIN
+            trapda
+            ON trapda.ipda = aebtrk.creg
+            AND aebtrk.dtab = 'trapda'
+        INNER JOIN
+            aebhit
+            ON aebhit.ihit = aebtrk.ihit
+        WHERE
+            aebtrk.ihit IN (
+                0, 302, 469, 493, 507, 508, 511, 512, 513, 523, 524, 526, 527, 530, 541,
+                542, 543, 544, 546, 547, 562, 568, 630, 631, 632, 633, 635, 636
+            )
+            AND trapda.ientcor IN (82861, 232829, 232830, 232831, 232833)
+            AND trapda.cpda LIKE 'TIP%'
+            AND itrk < 1500052
+            AND ipda = 5215  /* Hay que poner itrk e ipda según las variables acumuladas en el proceso */
+            AND YEAR(fhit) * 100 + MONTH(fhit) > 202409;
+            """
         self.conversion_dict = {
             "ANXE01": "TBD",
             "ANXE02": "TBD",
@@ -93,7 +126,7 @@ class EstadoAneGru:
             "TRA0081": "202",
             "TRA0102": "402",
             "TRA0106": "COR"
-            }
+        }
 
 
     def procesa_partida(self, cpda, q10_lines):
@@ -214,6 +247,12 @@ class EstadoAneGru:
         print(df.to_markdown(index=False))
         self.process_query_response(query_reply)
         self.actualizar_comunicado()
+        second_query_reply = self.bm.consulta_(self.query_repesca)
+        df = pd.DataFrame(second_query_reply['contenido'])
+        print(df.to_markdown(index=False))
+        if second_query_reply.get("contenido"):
+            self.partidas = None
+            self.process_query_response(second_query_reply)
 
 
 if __name__ == "__main__":
