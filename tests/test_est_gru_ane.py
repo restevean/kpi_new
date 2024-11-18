@@ -20,8 +20,8 @@ def test_load_dir_files(estado_gru_ane, tmp_path):
 
 
 def test_get_cod_hito(estado_gru_ane):
-    assert estado_gru_ane.get_cod_hito("SMA") == "ENT001"
-    assert estado_gru_ane.get_cod_hito("402") == "SAL001"
+    assert estado_gru_ane.get_cod_hito("001") == "ENT001"
+    assert estado_gru_ane.get_cod_hito("SPC") == "SAL001"
     assert estado_gru_ane.get_cod_hito("XXX") is None  # Valor inexistente
 
 

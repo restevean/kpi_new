@@ -9,32 +9,24 @@ from datetime import datetime
 import paramiko
 
 
-load_dotenv(dotenv_path="../conf/.env.base")
-ENTORNO = os.getenv("ENTORNO")
-INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
-load_dotenv(dotenv_path=f"../conf/.env.'+{INTEGRATION_CUST}")
-EMAIL_TO = os.getenv("EMAIL_TO")
-SFTP_SERVER = os.getenv("SFTP_SERVER")
-SFTP_USER = os.getenv("SFTP_USER")
-SFTP_PW = os.getenv("SFTP_PW")
-SFTP_PORT = os.getenv("SFTP_PORT")
-SFTP_STAT_IN_DIR = os.getenv("SFTP_STAT_IN_DIR")
-SFTP_DEV_STAT_IN_DIR = os.getenv("SFTP_DEV_STAT_IN_DIR")
-SFTP_STAT_OUT_DIR = os.getenv("SFTP_STAT_OUT_DIR")
-SFTP_DEV_STAT_OUT_DIR = os.getenv("SFTP_DEV_STAT_OUT_DIR")
-
-
 class EstadoAneGru:
 
     def __init__(self):
-        self.entorno = ENTORNO
-        self.host = SFTP_SERVER
-        self.username = SFTP_USER
-        self.password = SFTP_PW
-        self.port = int(SFTP_PORT)
+        load_dotenv(dotenv_path="../conf/.env.base")
+        self.entorno = os.getenv("ENTORNO")
+        INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
+        load_dotenv(dotenv_path=f"../conf/.env.'+{INTEGRATION_CUST}")
+        self.host = os.getenv("SFTP_SERVER")
+        self.username = os.getenv("SFTP_USER")
+        self.password = os.getenv("SFTP_PW")
+        self.port = int(os.getenv("SFTP_PORT"))
         self.local_work_directory = "../fixtures"
-        self.remote_work_out_directory = SFTP_STAT_OUT_DIR if self.entorno == "prod" else SFTP_DEV_STAT_OUT_DIR
-        self.remote_work_in_directory = SFTP_STAT_IN_DIR if self.entorno == "prod" else SFTP_DEV_STAT_IN_DIR
+        self.sftp_stat_in_dir = os.getenv("SFTP_STAT_IN_DIR")
+        self.sftp_dev_stat_in_dir = os.getenv("SFTP_DEV_STAT_IN_DIR")
+        self.sftp_stat_out_dir = os.getenv("SFTP_STAT_OUT_DIR")
+        self.sftp_dev_stat_out_dir = os.getenv("SFTP_DEV_STAT_OUT_DIR")
+        self.remote_work_out_directory = self.sftp_stat_out_dir if self.entorno == "prod" else self.sftp_dev_stat_out_dir
+        self.remote_work_in_directory = self.sftp_stat_in_dir if self.entorno == "prod" else self.sftp_dev_stat_in_dir
         self.partidas = None
         self.bm = BmApi()
         self.query_partidas = """
@@ -194,9 +186,8 @@ class EstadoAneGru:
             self.procesa_partida(cpda, events)
 
 
-    @staticmethod
-    def upload_file(local_file_path):
-        remote_directory = os.environ.get('SFTP_STAT_IN_DIR') if ENTORNO == 'prod' else os.environ.get(
+    def upload_file(self, local_file_path):
+        remote_directory = os.environ.get('SFTP_STAT_IN_DIR') if self.entorno == 'prod' else os.environ.get(
             'SFTP_DEV_STAT_IN_DIR')
         sftp_server = os.environ.get('SFTP_SERVER')
         sftp_user = os.environ.get('SFTP_USER')
@@ -265,6 +256,6 @@ x 2. Cambiamos el chit y los convertimos a su edi
 x 3. Procesamos los resultados y escribimos un archivo formato txt por partida con tantas Q10 como itrk de esa partida
 x 4. Subimos los archivos al SFTP de gru
 x 5. Por cada partida usamos post_partida_tracking para asignarle a cada ipda el ihit a 647
-6. Repesca? si guardamos el último itrk max. de la última consulta, la siguiente consulta la hacemos a partir de ese 
+x 6. Repesca? si guardamos el último itrk max. de la última consulta, la siguiente consulta la hacemos a partir de ese 
     itrk+1 cuyos hitos no sean 647, ¿no?
 """
