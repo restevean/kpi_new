@@ -1,15 +1,26 @@
-import os
-import pytest
-import tempfile
-import datetime
-from unittest.mock import patch, MagicMock, ANY
+# tests/test_est_ane_gru.py
 
-from src.est_ane_gru import EstadoAneGru
+import pytest
+from unittest.mock import patch, Mock, MagicMock, ANY, mock_open
+import os
+from datetime import datetime
+from src.est_ane_gru import EstadoAneGru  # Asegúrate de ajustar la ruta de importación según tu estructura de proyecto
+
+# tests/test_est_ane_gru.py
+
+import pytest
+from unittest.mock import patch, Mock, ANY
+import os
+from textwrap import dedent
+from src.est_ane_gru import EstadoAneGru  # Ajusta la ruta de importación según tu estructura de proyecto
 
 
 @pytest.fixture
-def estado_ane_gru():
-    # Configurar variables de entorno necesarias
+def estado_ane_gru_fixture():
+    """
+    Fixture para crear una instancia de EstadoAneGru con configuración de variables de entorno
+    y mock de BmApi.
+    """
     with patch.dict(os.environ, {
         'ENTORNO': 'dev',
         'SFTP_SERVER': 'localhost',
@@ -21,206 +32,564 @@ def estado_ane_gru():
         'SFTP_STAT_OUT_DIR': '/remote/out/dir',
         'SFTP_DEV_STAT_OUT_DIR': '/remote/dev/out/dir',
     }):
-        yield EstadoAneGru()
+        # Mockear la clase BmApi en el módulo donde se utiliza (src.est_ane_gru)
+        with patch('src.est_ane_gru.BmApi') as MockBmApi:
+            mock_bm = MockBmApi.return_value
+            # Puedes configurar comportamientos por defecto si es necesario
+            # Por ejemplo:
+            # mock_bm.post_partida_tracking.return_value = {'status_code': 200, 'contenido': {...}}
+
+            # Instanciar EstadoAneGru sin pasar argumentos
+            estado = EstadoAneGru()
+            yield estado, mock_bm
 
 
-def test_init(estado_ane_gru):
-    assert estado_ane_gru.entorno == 'dev'
-    assert estado_ane_gru.host == 'localhost'
-    assert estado_ane_gru.username == 'user'
-    assert estado_ane_gru.password == 'password'
-    assert estado_ane_gru.port == 22
-    assert estado_ane_gru.partidas is None
+def test_init(estado_ane_gru_fixture):
+    """
+    Test del método __init__ para asegurar que los atributos se inicializan correctamente.
+    """
+    estado, mock_bm = estado_ane_gru_fixture
+    assert estado.entorno == 'dev'
+    assert estado.host == 'localhost'
+    assert estado.username == 'user'
+    assert estado.password == 'password'
+    assert estado.port == 22
+    assert estado.local_work_directory == "../fixtures"
+    assert estado.sftp_stat_in_dir == '/remote/in/dir'
+    assert estado.sftp_dev_stat_in_dir == '/remote/dev/in/dir'
+    assert estado.sftp_stat_out_dir == '/remote/out/dir'
+    assert estado.sftp_dev_stat_out_dir == '/remote/dev/out/dir'
+    assert estado.remote_work_out_directory == '/remote/dev/out/dir'
+    assert estado.remote_work_in_directory == '/remote/dev/in/dir'
+    assert estado.partidas is None
+    assert estado.max_itrk is None
+    assert estado.bm == mock_bm
+    assert estado.query_partidas is not None
+    assert estado.conversion_dict is not None
 
 
-def test_write_txt_file(estado_ane_gru):
-    with tempfile.TemporaryDirectory() as temp_dir:
-        estado_ane_gru.local_work_directory = temp_dir
-        cpda = 'TEST123'
-        content = 'Contenido de prueba'
-        file_path = estado_ane_gru.write_txt_file(cpda, content)
-        assert os.path.isfile(file_path)
-        with open(file_path, 'r') as f:
-            file_content = f.read()
-        assert file_content == content
+def test_query_repesca_property(estado_ane_gru_fixture):
+    """
+    Test de la propiedad query_repesca para verificar que genera la consulta SQL correcta.
+    """
+    estado, mock_bm = estado_ane_gru_fixture
+    estado.max_itrk = 1000
+    expected_query = dedent(f"""
+        SELECT TOP 2000
+            trapda.cpda,
+            trapda.ipda,
+            nrefcor,
+            itrk,
+            aebtrk.ihit,
+            aebhit.chit,
+            aebhit.dhit,
+            aebtrk.fmod,
+            aebtrk.hmod,
+            aebtrk.fhit,
+            aebtrk.hhit
+        FROM
+            aebtrk
+        INNER JOIN
+            trapda
+            ON trapda.ipda = aebtrk.creg
+            AND aebtrk.dtab = 'trapda'
+        INNER JOIN
+            aebhit
+            ON aebhit.ihit = aebtrk.ihit
+        WHERE
+            aebtrk.ihit IN (
+                0, 302, 469, 493, 507, 508, 511, 512, 513, 523, 524, 526, 527, 530, 541,
+                542, 543, 544, 546, 547, 562, 568, 630, 631, 632, 633, 635, 636
+            )
+            AND trapda.ientcor IN (82861, 232829, 232830, 232831, 232833)
+            AND trapda.cpda LIKE 'TIP%'
+
+            --AND ipda = 5215  /* Hay que poner itrk e ipda según las variables acumuladas en el proceso */
+            --AND ipda = 5215  /* Hay que poner itrk e ipda según las variables acumuladas en el proceso */
+            AND itrk > {estado.max_itrk}
+            AND YEAR(fhit) * 100 + MONTH(fhit) > 202409;
+    """).strip()
+
+    actual_query = dedent(estado.query_repesca).strip()
+
+    assert actual_query == expected_query
 
 
-def test_upload_file_success(estado_ane_gru):
-    # Mock paramiko.Transport y paramiko.SFTPClient
-    with patch('paramiko.Transport') as mock_transport_class:
-        mock_transport_instance = MagicMock()
-
-        # Mockear el constructor para que acepte argumentos
-        def transport_side_effect(*args, **kwargs):
-            return mock_transport_instance
-
-        mock_transport_class.side_effect = transport_side_effect
-        mock_transport_instance.connect.return_value = None
-        mock_transport_instance.close.return_value = None
-
-        with patch('paramiko.SFTPClient.from_transport') as mock_sftp_client_class:
-            mock_sftp_client_instance = MagicMock()
-            mock_sftp_client_class.return_value = mock_sftp_client_instance
-            mock_sftp_client_instance.put.return_value = None
-            mock_sftp_client_instance.close.return_value = None
-
-            local_file_path = '/path/to/local/file.txt'
-            success = estado_ane_gru.upload_file(local_file_path)
-            assert success is True
-            mock_transport_instance.connect.assert_called_with(username='user', password='password')
-            mock_sftp_client_instance.put.assert_called_with(local_file_path, ANY)
+import pytest
+from unittest.mock import patch, mock_open
+from datetime import datetime
+import os
+from textwrap import dedent
+from src.est_ane_gru import EstadoAneGru  # Asegúrate de que la ruta de importación sea correcta
 
 
-def test_upload_file_failure(estado_ane_gru):
-    # Mock paramiko to raise an exception
-    with patch('paramiko.Transport', side_effect=Exception('SFTP error')):
-        local_file_path = '/path/to/local/file.txt'
-        success = estado_ane_gru.upload_file(local_file_path)
-        assert success is False
+def test_write_txt_file(estado_ane_gru_fixture):
+    """
+    Test del método write_txt_file para asegurar que escribe el contenido correctamente en el archivo.
+    """
+    estado, mock_bm = estado_ane_gru_fixture
+    cpda = 'CPDA001'
+    content = "Test content"
+    fixed_datetime = datetime(2023, 1, 1, 12, 30)
+    filename = "STATE-CPDA001-202301011230.txt"  # Formato fijo
+    expected_path = os.path.join(estado.local_work_directory, filename)
+
+    # Definir una subclase de datetime que siempre devuelve fixed_datetime cuando se llama a now()
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return fixed_datetime
+
+    with patch('src.est_ane_gru.os.path.join', return_value=expected_path) as mock_join, \
+            patch('src.est_ane_gru.open', mock_open()) as mock_file, \
+            patch('src.est_ane_gru.datetime', FixedDateTime):
+        # Ejecutar el método
+        path = estado.write_txt_file(cpda, content)
+
+        # Verificar que os.path.join fue llamado correctamente
+        mock_join.assert_called_once_with(estado.local_work_directory, filename)
+
+        # Verificar que open fue llamado con la ruta correcta y modo 'w'
+        mock_file.assert_called_once_with(expected_path, 'w')
+
+        # Verificar que write fue llamado una vez con el contenido correcto
+        mock_file().write.assert_called_once_with(content)
+
+        # Verificar que la ruta retornada es la esperada
+        assert path == expected_path
 
 
-def test_process_query_response(estado_ane_gru):
-    # Mock the query response
+def test_upload_file_success(estado_ane_gru_fixture):
+    """
+    Test del método upload_file para asegurar que sube el archivo correctamente mediante SFTP.
+    """
+    estado, mock_bm = estado_ane_gru_fixture
+    estado.entorno = 'dev'
+    local_file_path = "/local/path/file.txt"
+    remote_directory = estado.sftp_dev_stat_in_dir
+    remote_file_path = f"{remote_directory}/file.txt"
+
+    # Mock paramiko.Transport y SFTPClient
+    with patch('paramiko.Transport') as mock_transport_class, \
+            patch('paramiko.SFTPClient.from_transport') as mock_sftp_client_class:
+        mock_transport = mock_transport_class.return_value
+        mock_sftp = mock_sftp_client_class.return_value
+
+        result = estado.upload_file(local_file_path)
+
+        mock_transport_class.assert_called_with((estado.host, estado.port))
+        mock_transport.connect.assert_called_with(username=estado.username, password=estado.password)
+        mock_sftp.put.assert_called_with(local_file_path, remote_file_path)
+        mock_sftp.close.assert_called_once()
+        mock_transport.close.assert_called_once()
+        assert result is True
+
+
+def test_upload_file_failure(estado_ane_gru_fixture):
+    """
+    Test del método upload_file para asegurar que maneja correctamente los fallos en la subida mediante SFTP.
+    """
+    estado, mock_bm = estado_ane_gru_fixture
+    estado.entorno = 'prod'
+    local_file_path = "/local/path/file.txt"
+    remote_directory = estado.sftp_stat_in_dir
+    remote_file_path = f"{remote_directory}/file.txt"
+
+    # Mock paramiko.Transport para lanzar una excepción
+    with patch('paramiko.Transport', side_effect=Exception("Connection failed")) as mock_transport_class, \
+            patch('paramiko.SFTPClient.from_transport') as mock_sftp_client_class, \
+            patch('builtins.print') as mock_print:
+        result = estado.upload_file(local_file_path)
+
+        mock_transport_class.assert_called_with((estado.host, estado.port))
+        mock_print.assert_called_with(f"Error al subir el archivo {local_file_path} mediante SFTP: Connection failed")
+        assert result is False
+
+
+# tests/test_est_ane_gru.py
+
+import pytest
+from unittest.mock import patch, Mock, ANY, mock_open
+from datetime import datetime
+import os
+from textwrap import dedent
+from src.est_ane_gru import EstadoAneGru  # Asegúrate de que la ruta de importación sea correcta
+
+
+@pytest.fixture
+def estado_ane_gru_fixture():
+    """
+    Fixture para crear una instancia de EstadoAneGru con configuración de variables de entorno
+    y mock de BmApi.
+    """
+    with patch.dict(os.environ, {
+        'ENTORNO': 'dev',
+        'SFTP_SERVER': 'localhost',
+        'SFTP_USER': 'user',
+        'SFTP_PW': 'password',
+        'SFTP_PORT': '22',
+        'SFTP_STAT_IN_DIR': '/remote/in/dir',
+        'SFTP_DEV_STAT_IN_DIR': '/remote/dev/in/dir',
+        'SFTP_STAT_OUT_DIR': '/remote/out/dir',
+        'SFTP_DEV_STAT_OUT_DIR': '/remote/dev/out/dir',
+    }):
+        # Mockear la clase BmApi en el módulo donde se utiliza (src.est_ane_gru)
+        with patch('src.est_ane_gru.BmApi') as MockBmApi:
+            mock_bm = MockBmApi.return_value
+            # Puedes configurar comportamientos por defecto si es necesario
+            # Por ejemplo:
+            # mock_bm.post_partida_tracking.return_value = {'status_code': 200, 'contenido': {...}}
+
+            # Instanciar EstadoAneGru sin pasar argumentos
+            estado = EstadoAneGru()
+            yield estado, mock_bm
+
+
+def test_procesa_partida_success(estado_ane_gru_fixture):
+    """
+    Test del método procesa_partida para asegurar que procesa una partida correctamente en caso de éxito.
+    """
+    estado, mock_bm = estado_ane_gru_fixture
+    cpda = 'CPDA001'
+    q10_lines = [
+        {
+            "status_code": "ANXE05",
+            "date_of_event": "2023-01-01",
+            "time_of_event": "12:30:00"
+        },
+        {
+            "status_code": "ANXE07",
+            "date_of_event": "2023-01-02",
+            "time_of_event": "13:45:00"
+        }
+    ]
+
+    estado.partidas = {
+        cpda: {
+            'ipda': 'IPDA001',
+            'events': q10_lines
+        }
+    }
+
+    with patch.object(estado, 'write_txt_file') as mock_write_txt_file, \
+            patch.object(estado, 'upload_file', return_value=True) as mock_upload_file, \
+            patch('src.est_ane_gru.Fort') as MockFort, \
+            patch('src.est_ane_gru.composeQ10') as mock_composeQ10, \
+            patch('src.est_ane_gru.os.remove') as mock_remove:  # Mockear os.remove
+
+        # Configurar el mock de Fort
+        mock_fort_instance = MockFort.return_value
+        mock_fort_instance.header.return_value = "HEADER"
+        mock_fort_instance.header_q00.return_value = "HEADER_Q00"
+        mock_fort_instance.z_control_record.return_value = "Z_CONTROL"
+        mock_fort_instance.cierre.return_value = "CIERRE"
+
+        # Configurar el mock de composeQ10
+        mock_composeQ10.side_effect = ["Q10_LINE1", "Q10_LINE2"]
+
+        # Configurar el mock de write_txt_file
+        mock_write_txt_file.return_value = "/local/path/file.txt"
+
+        # Ejecutar el método
+        txt_file_content = estado.procesa_partida(cpda, q10_lines)
+
+        # Verificar llamadas a Fort
+        mock_fort_instance.header.assert_called_once_with("w")
+        mock_fort_instance.header_q00.assert_called_once_with("w")
+        mock_fort_instance.z_control_record.assert_called_once_with(2)
+        mock_fort_instance.cierre.assert_called_once_with("w")
+
+        # Verificar llamadas a composeQ10
+        assert mock_composeQ10.call_count == 2
+        mock_composeQ10.assert_any_call(
+            status_code="COR",  # Según conversion_dict, ANXE05 -> COR
+            date_of_event="2023-01-01",
+            time_of_event="12:30:00"
+        )
+        mock_composeQ10.assert_any_call(
+            status_code="CRI",  # Según conversion_dict, ANXE07 -> CRI
+            date_of_event="2023-01-02",
+            time_of_event="13:45:00"
+        )
+
+        # Verificar llamada a write_txt_file
+        mock_write_txt_file.assert_called_with(cpda, "HEADERHEADER_Q00Q10_LINE1Q10_LINE2Z_CONTROLCIERRE")
+
+        # Verificar llamada a upload_file
+        mock_upload_file.assert_called_with("/local/path/file.txt")
+
+        # Verificar que os.remove fue llamado con la ruta correcta
+        mock_remove.assert_called_once_with("/local/path/file.txt")
+
+        # Verificar que 'success' se haya actualizado correctamente
+        assert estado.partidas[cpda]['success'] == True
+
+        # Verificar contenido retornado
+        assert txt_file_content == "HEADERHEADER_Q00Q10_LINE1Q10_LINE2Z_CONTROLCIERRE"
+
+
+def test_procesa_partida_failure(estado_ane_gru_fixture):
+    """
+    Test del método procesa_partida para asegurar que maneja correctamente los fallos en la subida.
+    """
+    estado, mock_bm = estado_ane_gru_fixture
+    cpda = 'CPDA002'
+    q10_lines = [
+        {
+            "status_code": "ANXE05",
+            "date_of_event": "2023-02-01",
+            "time_of_event": "14:00:00"
+        }
+    ]
+
+    estado.partidas = {
+        cpda: {
+            'ipda': 'IPDA002',
+            'events': q10_lines
+        }
+    }
+
+    with patch.object(estado, 'write_txt_file') as mock_write_txt_file, \
+            patch.object(estado, 'upload_file', return_value=False) as mock_upload_file, \
+            patch('src.est_ane_gru.Fort') as MockFort, \
+            patch('src.est_ane_gru.composeQ10') as mock_composeQ10, \
+            patch('builtins.print') as mock_print:
+        mock_fort_instance = MockFort.return_value
+        mock_fort_instance.header.return_value = "HEADER"
+        mock_fort_instance.header_q00.return_value = "HEADER_Q00"
+        mock_fort_instance.z_control_record.return_value = "Z_CONTROL"
+        mock_fort_instance.cierre.return_value = "CIERRE"
+
+        mock_composeQ10.return_value = "Q10_LINE1"
+
+        mock_write_txt_file.return_value = "/local/path/file.txt"
+
+        txt_file_content = estado.procesa_partida(cpda, q10_lines)
+
+        # Verificar llamada a write_txt_file
+        mock_write_txt_file.assert_called_with(cpda, "HEADERHEADER_Q00Q10_LINE1Z_CONTROLCIERRE")
+
+        # Verificar llamada a upload_file
+        mock_upload_file.assert_called_with("/local/path/file.txt")
+
+        # Verificar que os.remove no fue llamado
+        with patch('os.remove') as mock_remove:
+            estado.procesa_partida(cpda, q10_lines)
+            mock_remove.assert_not_called()
+
+        # Verificar mensaje de fallo
+        mock_print.assert_called_with(f"Fallo al subir el archivo para cpda {cpda}")
+
+        # Verificar que 'success' se haya actualizado correctamente
+        assert estado.partidas[cpda]['success'] == False
+
+        # Verificar contenido retornado
+        assert txt_file_content == "HEADERHEADER_Q00Q10_LINE1Z_CONTROLCIERRE"
+
+
+def test_process_query_response(estado_ane_gru_fixture):
+    """
+    Test del método process_query_response para asegurar que procesa correctamente la respuesta de la consulta.
+    """
+    estado, mock_bm = estado_ane_gru_fixture
     query_reply = {
+        'status_code': 200,
         'contenido': [
-            {
-                'cpda': 'CPDA001',
-                'ipda': 'IPDA001',
-                'chit': 'CHIT001',
-                'fhit': '2023-11-10',
-                'hhit': '10:00:00'
-            },
-            {
-                'cpda': 'CPDA001',
-                'ipda': 'IPDA001',
-                'chit': 'CHIT002',
-                'fhit': '2023-11-11',
-                'hhit': '11:00:00'
-            },
-            {
-                'cpda': 'CPDA002',
-                'ipda': 'IPDA002',
-                'chit': 'CHIT003',
-                'fhit': '2023-11-12',
-                'hhit': '12:00:00'
-            },
+            {'cpda': 'CPDA001', 'ipda': 'IPDA001', 'chit': 'ANXE05', 'fhit': '2023-01-01', 'hhit': '12:30:00'},
+            {'cpda': 'CPDA001', 'ipda': 'IPDA001', 'chit': 'ANXE07', 'fhit': '2023-01-02', 'hhit': '13:45:00'},
+            {'cpda': 'CPDA002', 'ipda': 'IPDA002', 'chit': 'ANXE06', 'fhit': '2023-01-03', 'hhit': '14:00:00'},
         ]
     }
 
-    # Mock methods called within process_query_response
-    with patch.object(estado_ane_gru, 'procesa_partida') as mock_procesa_partida:
-        estado_ane_gru.process_query_response(query_reply)
-        assert len(estado_ane_gru.partidas) == 2
+    with patch.object(estado, 'procesa_partida') as mock_procesa_partida:
+        estado.process_query_response(query_reply)
+
+        # Verificar estructura de 'partidas'
+        assert estado.partidas == {
+            'CPDA001': {
+                'ipda': 'IPDA001',
+                'events': [
+                    {'status_code': 'ANXE05', 'date_of_event': '2023-01-01', 'time_of_event': '12:30:00'},
+                    {'status_code': 'ANXE07', 'date_of_event': '2023-01-02', 'time_of_event': '13:45:00'},
+                ]
+            },
+            'CPDA002': {
+                'ipda': 'IPDA002',
+                'events': [
+                    {'status_code': 'ANXE06', 'date_of_event': '2023-01-03', 'time_of_event': '14:00:00'},
+                ]
+            }
+        }
+
+        # Verificar llamadas a procesa_partida
+        assert mock_procesa_partida.call_count == 2
         mock_procesa_partida.assert_any_call('CPDA001', [
-            {
-                'status_code': 'CHIT001',
-                'date_of_event': '2023-11-10',
-                'time_of_event': '10:00:00'
-            },
-            {
-                'status_code': 'CHIT002',
-                'date_of_event': '2023-11-11',
-                'time_of_event': '11:00:00'
-            },
+            {'status_code': 'ANXE05', 'date_of_event': '2023-01-01', 'time_of_event': '12:30:00'},
+            {'status_code': 'ANXE07', 'date_of_event': '2023-01-02', 'time_of_event': '13:45:00'}
         ])
         mock_procesa_partida.assert_any_call('CPDA002', [
-            {
-                'status_code': 'CHIT003',
-                'date_of_event': '2023-11-12',
-                'time_of_event': '12:00:00'
-            }
+            {'status_code': 'ANXE06', 'date_of_event': '2023-01-03', 'time_of_event': '14:00:00'}
         ])
 
 
-def test_actualizar_comunicado(estado_ane_gru):
-    # Configurar partidas
-    estado_ane_gru.partidas = {
+def test_actualizar_comunicado_success(estado_ane_gru_fixture):
+    """
+    Test del método actualizar_comunicado para asegurar que maneja correctamente las actualizaciones exitosas.
+    """
+    estado, mock_bm = estado_ane_gru_fixture
+    estado.partidas = {
         'CPDA001': {
             'ipda': 'IPDA001',
             'success': True
         },
         'CPDA002': {
             'ipda': 'IPDA002',
-            'success': False
+            'success': False  # No debe procesarse
         },
         'CPDA003': {
             'ipda': None,
+            'success': True  # Debe ser ignorado por falta de 'ipda'
+        },
+    }
+
+    # Configurar la respuesta mockeada para post_partida_tracking
+    mock_bm.post_partida_tracking.return_value = {
+        'status_code': 200,
+        'contenido': {"resultado": "éxito"}
+    }
+
+    with patch('builtins.print') as mock_print:
+        estado.actualizar_comunicado()
+
+        # Verificar que post_partida_tracking fue llamado solo para 'CPDA001'
+        mock_bm.post_partida_tracking.assert_called_once_with('IPDA001', {
+            "codigohito": "ESTADOCOM",
+            "descripciontracking": "ESTADO COMUNICADO",
+            "fechatracking": ANY
+        })
+
+        # Verificar que 'max_itrk' se actualizó correctamente
+        assert estado.max_itrk == {"resultado": "éxito"}
+
+        # Verificar mensajes impresos
+        mock_print.assert_any_call("Comunicado actualizado exitosamente para ipda IPDA001")
+        mock_print.assert_any_call("No se encontró 'ipda' para cpda CPDA003")
+
+
+def test_actualizar_comunicado_error_response(estado_ane_gru_fixture):
+    """
+    Test del método actualizar_comunicado para asegurar que maneja correctamente respuestas con errores HTTP.
+    """
+    estado, mock_bm = estado_ane_gru_fixture
+    estado.partidas = {
+        'CPDA001': {
+            'ipda': 'IPDA001',
             'success': True
         },
     }
 
-    # Mock BmApi
-    with patch.object(estado_ane_gru.bm, 'post_partida_tracking') as mock_post_tracking:
-        # Configurar respuesta simulada
-        mock_post_tracking.return_value = {'status_code': 200}
+    # Configurar la respuesta mockeada con error HTTP
+    mock_bm.post_partida_tracking.return_value = {
+        'status_code': 500,
+        'contenido': {"error": "Internal Server Error"}
+    }
 
-        estado_ane_gru.actualizar_comunicado()
+    with patch('builtins.print') as mock_print:
+        estado.actualizar_comunicado()
 
-        # Verificar que se llamó para CPDA001
-        mock_post_tracking.assert_called_with('IPDA001', {
-            'codigohito': 'ESTADOCOM',
-            'descripciontracking': 'ESTADO COMUNICADO',
-            'fechatracking': ANY  # Ignoramos el valor exacto de la fecha
+        # Verificar que post_partida_tracking fue llamado correctamente
+        mock_bm.post_partida_tracking.assert_called_once_with('IPDA001', {
+            "codigohito": "ESTADOCOM",
+            "descripciontracking": "ESTADO COMUNICADO",
+            "fechatracking": ANY
         })
 
-        # Verificar que no se llamó para CPDA002 (success=False)
-        # Verificar que se imprimió mensaje para CPDA003 (ipda=None)
+        # Verificar que 'max_itrk' no se actualizó
+        assert estado.max_itrk is None
+
+        # Verificar mensajes impresos
+        mock_print.assert_any_call("Error al actualizar el comunicado para ipda IPDA001: Código de estado 500")
 
 
-def test_run(estado_ane_gru):
-    # Mock BmApi consulta_
-    query_reply = {
-        'contenido': []
+def test_actualizar_comunicado_invalid_response(estado_ane_gru_fixture):
+    """
+    Test del método actualizar_comunicado para asegurar que maneja respuestas inválidas correctamente.
+    """
+    estado, mock_bm = estado_ane_gru_fixture
+    estado.partidas = {
+        'CPDA001': {
+            'ipda': 'IPDA001',
+            'success': True
+        },
     }
-    with patch.object(estado_ane_gru.bm, 'consulta_', return_value=query_reply) as mock_consulta:
-        with patch.object(estado_ane_gru, 'process_query_response') as mock_process_query_response:
-            with patch.object(estado_ane_gru, 'actualizar_comunicado') as mock_actualizar_comunicado:
-                estado_ane_gru.run()
-                mock_consulta.assert_called()
-                mock_process_query_response.assert_called_with(query_reply)
-                mock_actualizar_comunicado.assert_called()
 
-
-def test_procesa_partida(estado_ane_gru):
-    # Initialize partidas as a dictionary
-    cpda = 'CPDA001'
-    estado_ane_gru.partidas = {
-        cpda: {'ipda': 'IPDA001'}
+    # Configurar la respuesta mockeada con respuesta inválida
+    mock_bm.post_partida_tracking.return_value = {
+        'invalid_key': 123
     }
-    # Mock dependencies
-    with patch('src.est_ane_gru.Fort') as mock_Fort:
-        mock_fort_instance = MagicMock()
-        mock_Fort.return_value = mock_fort_instance
-        # Set return values for methods of Fort instance
-        mock_fort_instance.header.return_value = 'HEADER_CONTENT'
-        mock_fort_instance.header_q00.return_value = 'HEADER_Q00_CONTENT'
-        mock_fort_instance.z_control_record.return_value = 'Z_CONTROL_CONTENT'
-        mock_fort_instance.cierre.return_value = 'CIERRE_CONTENT'
 
-        with patch('src.est_ane_gru.composeQ10', return_value='Q10_LINE_CONTENT') as mock_composeQ10:
-            # Adjust the mocks to prevent overwriting self.partidas[cpda]
-            with patch.object(estado_ane_gru, 'write_txt_file') as mock_write_txt_file:
-                mock_write_txt_file.return_value = '/path/to/file.txt'
-                with patch.object(estado_ane_gru, 'upload_file') as mock_upload_file:
-                    mock_upload_file.return_value = True
-                    with patch('os.remove') as mock_os_remove:
-                        q10_lines = [
-                            {
-                                'status_code': 'CHIT001',
-                                'date_of_event': '2023-11-10',
-                                'time_of_event': '10:00:00'
-                            },
-                            {
-                                'status_code': 'CHIT002',
-                                'date_of_event': '2023-11-11',
-                                'time_of_event': '11:00:00'
-                            },
-                        ]
-                        result = estado_ane_gru.procesa_partida(cpda, q10_lines)
-                        print(f"Result: {result}")
-                        assert result is not None
-                        # Instead of checking result['success'], check estado_ane_gru.partidas[cpda]
-                        assert estado_ane_gru.partidas[cpda]['success'] is True
-                        mock_write_txt_file.assert_called()
-                        mock_upload_file.assert_called_with('/path/to/file.txt')
-                        mock_os_remove.assert_called_with('/path/to/file.txt')
+    with patch('builtins.print') as mock_print:
+        estado.actualizar_comunicado()
+
+        # Verificar que post_partida_tracking fue llamado correctamente
+        mock_bm.post_partida_tracking.assert_called_once_with('IPDA001', {
+            "codigohito": "ESTADOCOM",
+            "descripciontracking": "ESTADO COMUNICADO",
+            "fechatracking": ANY
+        })
+
+        # Verificar que 'max_itrk' no se actualizó
+        assert estado.max_itrk is None
+
+        # Verificar mensajes impresos
+        mock_print.assert_any_call("Error al actualizar el comunicado para ipda IPDA001: Respuesta inválida")
+
+
+def test_run(estado_ane_gru_fixture):
+    """
+    Test del método run para asegurar que ejecuta el flujo completo correctamente.
+    """
+    estado, mock_bm = estado_ane_gru_fixture
+
+    # Configurar las respuestas mockeadas para n_consulta
+    first_query_reply = {
+        'status_code': 200,
+        'contenido': [
+            {'cpda': 'CPDA001', 'ipda': 'IPDA001', 'chit': 'ANXE05', 'fhit': '2023-01-01', 'hhit': '12:30:00'},
+            {'cpda': 'CPDA002', 'ipda': 'IPDA002', 'chit': 'ANXE07', 'fhit': '2023-01-02', 'hhit': '13:45:00'},
+        ]
+    }
+
+    second_query_reply = {
+        'status_code': 200,
+        'contenido': [
+            {'cpda': 'CPDA003', 'ipda': 'IPDA003', 'chit': 'ANXE06', 'fhit': '2023-02-01', 'hhit': '14:00:00'},
+        ]
+    }
+
+    mock_bm.n_consulta.side_effect = [first_query_reply, second_query_reply]
+
+    with patch.object(estado, 'process_query_response') as mock_process_query_response, \
+            patch.object(estado, 'actualizar_comunicado') as mock_actualizar_comunicado, \
+            patch('pandas.DataFrame.to_markdown') as mock_to_markdown, \
+            patch('builtins.print') as mock_print:
+        estado.run()
+
+        # Verificar que n_consulta fue llamado dos veces
+        assert mock_bm.n_consulta.call_count == 2
+        mock_bm.n_consulta.assert_any_call(estado.query_partidas)
+        mock_bm.n_consulta.assert_any_call(estado.query_repesca)
+
+        # Verificar que DataFrame.to_markdown fue llamado dos veces
+        assert mock_to_markdown.call_count == 2
+
+        # Verificar que process_query_response fue llamado dos veces
+        assert mock_process_query_response.call_count == 2
+        mock_process_query_response.assert_any_call(first_query_reply)
+        mock_process_query_response.assert_any_call(second_query_reply)
+
+        # Verificar que actualizar_comunicado fue llamado una vez
+        mock_actualizar_comunicado.assert_called_once()
+
+        # Verificar que print fue llamado al menos dos veces para los DataFrames
+        assert mock_print.call_count >= 2

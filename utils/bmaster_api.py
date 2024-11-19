@@ -262,25 +262,14 @@ class BmasterApi:
             return resp_dic
 
     def n_consulta(self, query: str) -> Dict[str, Any]:
-        """
-        Realiza una consulta enviando una solicitud POST.
-
-        Args:
-            query (str): Consulta SQL.
-
-        Returns:
-            Dict[str, Any]: Diccionario con 'status_code' y 'contenido' de la respuesta.
-        """
         url = f"{self.url}Consulta"
         resp_dic: Dict[str, Any] = {}
         peticion: requests.Response = None  # Inicialización explícita
 
         try:
-            # Realiza la solicitud POST con un timeout de 10 segundos
             peticion = requests.post(url, json=query, headers=self.headers, timeout=10)
             peticion.raise_for_status()  # Lanza una excepción para códigos de estado 4xx/5xx
 
-            # Intenta parsear la respuesta JSON
             try:
                 contenido = peticion.json()
             except ValueError as json_err:
