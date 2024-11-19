@@ -1,5 +1,7 @@
 import requests
 from requests.exceptions import HTTPError
+import logging
+from typing import Any, Dict, Optional
 import os
 from dotenv import load_dotenv
 from utils.safe_get_token import safe_get_token
@@ -98,6 +100,8 @@ class BmasterApi:
             print (e.strerror)
         except Exception as fallo:
             print (fallo)
+
+
     def post_albaran_vinculos(self, alvi_id, data_json):
         url_ = f'{self.url}Albaran/{str(alvi_id)}/vinculos'
         try:
@@ -230,6 +234,7 @@ class BmasterApi:
         except Exception as fallo:
             print (fallo)
 
+
     def post_albaran_entrada(self, data_json):
         url_ = f'{self.url}Entrada'
         try:
@@ -240,23 +245,72 @@ class BmasterApi:
             print (fallo)
 
 
-
-    def consulta_(self, query):
+    def consulta_(self, query):  # sourcery skip: extract-duplicate-method
         url = f"{self.url}Consulta"
         resp_dic={}
+        peticion = None
         try:
-            peticion=requests.post(url, json=query, headers=self.headers)
-            #print(peticion.json())
-            # print(query)
-            resp_dic["status_code"]=peticion.status_code
-            resp_dic["contenido"]=peticion.json()
-            return resp_dic#peticion.json()
+            peticion = requests.post(url, json=query, headers=self.headers)
+            resp_dic["status_code"] = peticion.status_code
+            resp_dic["contenido"] = peticion.json()
+            return resp_dic
         except Exception as e:
             print("Problemas cogiendo en la CONSULTA_   \n" + query)
             print(e)
-            resp_dic["status_code"]=peticion.status_code
-            resp_dic["contenido"]=peticion.json()
+            resp_dic["status_code"] = peticion.status_code
+            resp_dic["contenido"] = peticion.json()
             return resp_dic
+
+    def n_consulta(self, query: str) -> Dict[str, Any]:
+        url = f"{self.url}Consulta"
+        resp_dic: Dict[str, Any] = {}
+
+        try:
+            response = self.session.post(
+                url,
+                json=query,
+                headers=self.headers,
+                timeout=10  # Timeout en segundos
+            )
+            response.raise_for_status()  # Lanza una excepción para códigos de estado 4xx/5xx
+
+            try:
+                contenido = response.json()
+            except ValueError as json_err:
+                logging.error(f"Error al parsear JSON: {json_err} - Consulta: {query}")
+                contenido = {"error": "Respuesta JSON inválida"}
+
+            resp_dic["status_code"] = response.status_code
+            resp_dic["contenido"] = contenido
+
+            logging.info(f"Consulta ejecutada exitosamente: {query}")
+            return resp_dic
+
+        except requests.exceptions.Timeout:
+            logging.error(f"Timeout al ejecutar la consulta: {query}")
+            resp_dic["status_code"] = None
+            resp_dic["contenido"] = {"error": "Timeout en la solicitud"}
+            return resp_dic
+
+        except requests.exceptions.HTTPError as http_err:
+            status = response.status_code if 'response' in locals() else None
+            logging.error(f"HTTP error al ejecutar la consulta: {http_err} - Consulta: {query}")
+            resp_dic["status_code"] = status
+            resp_dic["contenido"] = {"error": str(http_err)}
+            return resp_dic
+
+        except requests.exceptions.RequestException as req_err:
+            logging.error(f"Error de conexión al ejecutar la consulta: {req_err} - Consulta: {query}")
+            resp_dic["status_code"] = None
+            resp_dic["contenido"] = {"error": str(req_err)}
+            return resp_dic
+
+        except Exception as e:
+            logging.error(f"Error inesperado al ejecutar la consulta: {e} - Consulta: {query}")
+            resp_dic["status_code"] = None
+            resp_dic["contenido"] = {"error": "Error inesperado"}
+            return resp_dic
+
 
 
     def peticion_post(self,url, _json):
@@ -272,6 +326,7 @@ class BmasterApi:
 
     
     def peticion_put(self,url, _json):
+        resp_dic = None
         try:
             peticion = requests.put(url,json=_json,headers=self.headers)
             resp_dic = {"status_code": peticion.status_code, "contenido": peticion.json()}
@@ -283,6 +338,7 @@ class BmasterApi:
 
     
     def peticion_get(self,url):
+        resp_dic = None
         try:
             peticion = requests.get(url,headers=self.headers)
             resp_dic = {"status_code": peticion.status_code, "contenido": peticion.json()}
