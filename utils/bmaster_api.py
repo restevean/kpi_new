@@ -262,25 +262,32 @@ class BmasterApi:
             return resp_dic
 
     def n_consulta(self, query: str) -> Dict[str, Any]:
+        """
+        Realiza una consulta enviando una solicitud POST.
+
+        Args:
+            query (str): Consulta SQL.
+
+        Returns:
+            Dict[str, Any]: Diccionario con 'status_code' y 'contenido' de la respuesta.
+        """
         url = f"{self.url}Consulta"
         resp_dic: Dict[str, Any] = {}
+        peticion: requests.Response = None  # Inicialización explícita
 
         try:
-            response = self.session.post(
-                url,
-                json=query,
-                headers=self.headers,
-                timeout=10  # Timeout en segundos
-            )
-            response.raise_for_status()  # Lanza una excepción para códigos de estado 4xx/5xx
+            # Realiza la solicitud POST con un timeout de 10 segundos
+            peticion = requests.post(url, json=query, headers=self.headers, timeout=10)
+            peticion.raise_for_status()  # Lanza una excepción para códigos de estado 4xx/5xx
 
+            # Intenta parsear la respuesta JSON
             try:
-                contenido = response.json()
+                contenido = peticion.json()
             except ValueError as json_err:
                 logging.error(f"Error al parsear JSON: {json_err} - Consulta: {query}")
-                contenido = {"error": "Respuesta JSON inválida"}
+                contenido = [{"error": "Respuesta JSON inválida"}]  # Asegura que 'contenido' sea una lista
 
-            resp_dic["status_code"] = response.status_code
+            resp_dic["status_code"] = peticion.status_code
             resp_dic["contenido"] = contenido
 
             logging.info(f"Consulta ejecutada exitosamente: {query}")
@@ -289,26 +296,26 @@ class BmasterApi:
         except requests.exceptions.Timeout:
             logging.error(f"Timeout al ejecutar la consulta: {query}")
             resp_dic["status_code"] = None
-            resp_dic["contenido"] = {"error": "Timeout en la solicitud"}
+            resp_dic["contenido"] = [{"error": "Timeout en la solicitud"}]
             return resp_dic
 
         except requests.exceptions.HTTPError as http_err:
-            status = response.status_code if 'response' in locals() else None
+            status = peticion.status_code if peticion else None
             logging.error(f"HTTP error al ejecutar la consulta: {http_err} - Consulta: {query}")
             resp_dic["status_code"] = status
-            resp_dic["contenido"] = {"error": str(http_err)}
+            resp_dic["contenido"] = [{"error": str(http_err)}]
             return resp_dic
 
         except requests.exceptions.RequestException as req_err:
             logging.error(f"Error de conexión al ejecutar la consulta: {req_err} - Consulta: {query}")
             resp_dic["status_code"] = None
-            resp_dic["contenido"] = {"error": str(req_err)}
+            resp_dic["contenido"] = [{"error": str(req_err)}]
             return resp_dic
 
         except Exception as e:
             logging.error(f"Error inesperado al ejecutar la consulta: {e} - Consulta: {query}")
             resp_dic["status_code"] = None
-            resp_dic["contenido"] = {"error": "Error inesperado"}
+            resp_dic["contenido"] = [{"error": "Error inesperado"}]
             return resp_dic
 
 

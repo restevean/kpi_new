@@ -243,12 +243,14 @@ class EstadoAneGru:
 
 
     def run(self):
-        query_reply = self.bm.consulta_(self.query_partidas)
+        query_reply = self.bm.n_consulta(self.query_partidas)
+        # query_reply = self.bm.consulta_(self.query_partidas)
         df = pd.DataFrame(query_reply['contenido'])
         print(df.to_markdown(index=False))
         self.process_query_response(query_reply)
         self.actualizar_comunicado()
-        second_query_reply = self.bm.consulta_(self.query_repesca)
+        second_query_reply = self.bm.n_consulta(self.query_repesca)
+        # second_query_reply = self.bm.consulta_(self.query_repesca)
         df = pd.DataFrame(second_query_reply['contenido'])
         print(df.to_markdown(index=False))
         if second_query_reply.get("contenido"):
