@@ -28,6 +28,7 @@ class EstadoAneGru:
         self.remote_work_out_directory = self.sftp_stat_out_dir if self.entorno == "prod" else self.sftp_dev_stat_out_dir
         self.remote_work_in_directory = self.sftp_stat_in_dir if self.entorno == "prod" else self.sftp_dev_stat_in_dir
         self.partidas = None
+        self.max_itrk = None
         self.bm = BmApi()
         self.query_partidas = """
         SELECT TOP 10
@@ -49,7 +50,8 @@ class EstadoAneGru:
             WHERE 
                 trapda.ientcor IN (82861, 232829, 232830, 232831, 232833) 
                 AND trapda.cpda LIKE 'TIP%'
-                AND aebtrk.ihit IN (647, 511, 523, 524) 
+                --AND aebtrk.ihit IN (647, 511, 523, 524) 
+                AND aebtrk.ihit IN (647)
             GROUP BY 
                 creg
         ) max_itrk ON max_itrk.maxitrk < aebtrk.itrk AND max_itrk.creg = aebtrk.creg
@@ -59,44 +61,12 @@ class EstadoAneGru:
                             511, 469, 302, 507, 512, 493, 508, 523, 524)
             AND trapda.ientcor IN (82861, 232829, 232830, 232831, 232833)
             AND trapda.cpda LIKE 'TIP%'
-            AND maxitrk IS NOT NULL
+            --AND maxitrk IS NOT NULL
             AND YEAR(fhit) * 100 + MONTH(fhit) > 202409
         ORDER BY 
             ipda, itrk ASC;
         """
-        self.query_repesca = """
-        SELECT TOP 2000
-            trapda.cpda,
-            trapda.ipda,
-            nrefcor,
-            itrk,
-            aebtrk.ihit,
-            aebhit.chit,
-            aebhit.dhit,
-            aebtrk.fmod,
-            aebtrk.hmod,
-            aebtrk.fhit,
-            aebtrk.hhit
-        FROM
-            aebtrk
-        INNER JOIN
-            trapda
-            ON trapda.ipda = aebtrk.creg
-            AND aebtrk.dtab = 'trapda'
-        INNER JOIN
-            aebhit
-            ON aebhit.ihit = aebtrk.ihit
-        WHERE
-            aebtrk.ihit IN (
-                0, 302, 469, 493, 507, 508, 511, 512, 513, 523, 524, 526, 527, 530, 541,
-                542, 543, 544, 546, 547, 562, 568, 630, 631, 632, 633, 635, 636
-            )
-            AND trapda.ientcor IN (82861, 232829, 232830, 232831, 232833)
-            AND trapda.cpda LIKE 'TIP%'
-            AND itrk < 1500052
-            AND ipda = 5215  /* Hay que poner itrk e ipda según las variables acumuladas en el proceso */
-            AND YEAR(fhit) * 100 + MONTH(fhit) > 202409;
-            """
+        # self.query_repesca = None
         self.conversion_dict = {
             "ANXE01": "TBD",
             "ANXE02": "TBD",
@@ -119,6 +89,45 @@ class EstadoAneGru:
             "TRA0102": "402",
             "TRA0106": "COR"
         }
+
+
+    @property
+    def query_repesca(self):
+        return f"""
+                SELECT TOP 2000
+                    trapda.cpda,
+                    trapda.ipda,
+                    nrefcor,
+                    itrk,
+                    aebtrk.ihit,
+                    aebhit.chit,
+                    aebhit.dhit,
+                    aebtrk.fmod,
+                    aebtrk.hmod,
+                    aebtrk.fhit,
+                    aebtrk.hhit
+                FROM
+                    aebtrk
+                INNER JOIN
+                    trapda
+                    ON trapda.ipda = aebtrk.creg
+                    AND aebtrk.dtab = 'trapda'
+                INNER JOIN
+                    aebhit
+                    ON aebhit.ihit = aebtrk.ihit
+                WHERE
+                    aebtrk.ihit IN (
+                        0, 302, 469, 493, 507, 508, 511, 512, 513, 523, 524, 526, 527, 530, 541,
+                        542, 543, 544, 546, 547, 562, 568, 630, 631, 632, 633, 635, 636
+                    )
+                    AND trapda.ientcor IN (82861, 232829, 232830, 232831, 232833)
+                    AND trapda.cpda LIKE 'TIP%'
+
+                    --AND ipda = 5215  /* Hay que poner itrk e ipda según las variables acumuladas en el proceso */
+                    --AND ipda = 5215  /* Hay que poner itrk e ipda según las variables acumuladas en el proceso */
+                    AND itrk > {self.max_itrk}
+                    AND YEAR(fhit) * 100 + MONTH(fhit) > 202409;
+                    """
 
 
     def procesa_partida(self, cpda, q10_lines):
@@ -230,6 +239,7 @@ class EstadoAneGru:
                         f"Error al actualizar el comunicado para ipda {ipda}: Código de estado {response['status_code']}")
                 else:
                     print(f"Comunicado actualizado exitosamente para ipda {ipda}")
+                    self.max_itrk = response['contenido']
 
 
     def run(self):
@@ -249,13 +259,3 @@ class EstadoAneGru:
 if __name__ == "__main__":
     estado_ane_gru = EstadoAneGru()
     estado_ane_gru.run()
-
-"""
-x 1. Lanzamos la consulta consulta_(query)
-x 2. Cambiamos el chit y los convertimos a su edi
-x 3. Procesamos los resultados y escribimos un archivo formato txt por partida con tantas Q10 como itrk de esa partida
-x 4. Subimos los archivos al SFTP de gru
-x 5. Por cada partida usamos post_partida_tracking para asignarle a cada ipda el ihit a 647
-x 6. Repesca? si guardamos el último itrk max. de la última consulta, la siguiente consulta la hacemos a partir de ese 
-    itrk+1 cuyos hitos no sean 647, ¿no?
-"""
