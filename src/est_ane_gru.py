@@ -54,14 +54,14 @@ class EstadoAneGru:
                 AND aebtrk.ihit IN (647)
             GROUP BY 
                 creg
-        ) max_itrk ON max_itrk.maxitrk < aebtrk.itrk AND max_itrk.creg = aebtrk.creg
+        ) max_itrk ON max_itrk.creg = aebtrk.creg
         WHERE 
             aebtrk.ihit IN (541, 542, 543, 0, 544, 562, 630, 631, 632, 633, 635, 
                             513, 526, 527, 530, 568, 632, 633, 635, 636, 546, 547, 
                             511, 469, 302, 507, 512, 493, 508, 523, 524)
             AND trapda.ientcor IN (82861, 232829, 232830, 232831, 232833)
             AND trapda.cpda LIKE 'TIP%'
-            --AND maxitrk IS NOT NULL
+            AND (maxitrk < itrk OR maxitrk IS NULL)
             AND YEAR(fhit) * 100 + MONTH(fhit) > 202409
         ORDER BY 
             ipda, itrk ASC;
@@ -239,23 +239,25 @@ class EstadoAneGru:
                         f"Error al actualizar el comunicado para ipda {ipda}: Código de estado {response['status_code']}")
                 else:
                     print(f"Comunicado actualizado exitosamente para ipda {ipda}")
-                    self.max_itrk = response['contenido']
 
 
     def run(self):
         query_reply = self.bm.n_consulta(self.query_partidas)
-        # query_reply = self.bm.consulta_(self.query_partidas)
         df = pd.DataFrame(query_reply['contenido'])
+        self.max_itrk = df['itrk'].max()
+        df = df.fillna("")
+        pd.options.display.float_format = '{:.0f}'.format
         print(df.to_markdown(index=False))
+        print(self.max_itrk)
         self.process_query_response(query_reply)
         self.actualizar_comunicado()
         second_query_reply = self.bm.n_consulta(self.query_repesca)
-        # second_query_reply = self.bm.consulta_(self.query_repesca)
         df = pd.DataFrame(second_query_reply['contenido'])
         print(df.to_markdown(index=False))
         if second_query_reply.get("contenido"):
             self.partidas = None
             self.process_query_response(second_query_reply)
+            self.actualizar_comunicado()
 
 
 if __name__ == "__main__":
