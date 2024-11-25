@@ -37,6 +37,7 @@ class PartidaArcAne:
         self.files = None
 
     def download_files(self):
+        # sourcery skip: extract-method, swap-if-else-branches, use-named-expression
         n_sftp = SftpConnection()
         try:
             logger.info("Estableciendo conexión SFTP...")
@@ -89,6 +90,11 @@ class PartidaArcAne:
             try:
                 logger.info(f"Procesando archivo: {file_path}")
                 # Proceso del archivo
+                with open(f"{n_path}/{file}", 'r') as archivo:
+                    for fila in archivo:
+                        print(fila)
+
+
                 # 1.- Comprobamos si tiene expediente
                 # Si lo tiene: enchufamos las partidas
                 # Si no lo tiene: movemos el archivo a "pending_to_process" si no está ya allí y
@@ -109,7 +115,7 @@ class PartidaArcAne:
         logger.info("Iniciando proceso de archivos pendientes de nrefcor")
         pda_arc = PartidaArcAne()
         pda_arc.files = self.load_dir_files(self.local_work_pof_process)
-        pda_arc.file_process(f"{self.load_dir_files}{self.local_work_pof_process}")
+        pda_arc.file_process(f"{self.local_work_directory}{self.local_work_pof_process}")
 
         # Ahora procesamos los recién descargados
         logger.info("Descargando nuevos archivos")
