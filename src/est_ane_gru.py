@@ -15,7 +15,7 @@ class EstadoAneGru:
         load_dotenv(dotenv_path="../conf/.env.base")
         self.entorno = os.getenv("ENTORNO")
         INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
-        load_dotenv(dotenv_path=f"../conf/.env.'+{INTEGRATION_CUST}")
+        load_dotenv(dotenv_path=f"../conf/.env.{INTEGRATION_CUST}")
         self.host = os.getenv("SFTP_SERVER")
         self.username = os.getenv("SFTP_USER")
         self.password = os.getenv("SFTP_PW")

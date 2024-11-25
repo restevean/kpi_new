@@ -7,21 +7,13 @@ from email.mime.text import MIMEText
 load_dotenv(dotenv_path="../conf/.env.base")
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
-load_dotenv(dotenv_path=f"../conf/.env.{INTEGRATION_CUST}")
+load_dotenv(dotenv_path=f"../conf/.env.{INTEGRATION_CUST}{ENTORNO}")
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = int(os.getenv("SMTP_PORT"))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME")
 SMTP_PASSWORD = os.getenv("SMTP_PW")
 
 class EmailSender:
-
-    """
-    def __init__(self):
-        self.smtp_server = SMTP_SERVER
-        self.smtp_port = SMTP_PORT
-        self.username = SMTP_USERNAME
-        self.password = SMTP_PASSWORD
-    """
 
     def __init__(self, smtp_server=None, smtp_port=None, username=None, password=None):
         self.smtp_server = smtp_server or os.getenv("SMTP_SERVER")
