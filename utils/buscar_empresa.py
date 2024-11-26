@@ -1,5 +1,15 @@
+# utils/buscar_empresa.py
+
+import logging
 from bmaster_api import BmasterApi
 
+# logging.basicConfig(
+#     level=logging.INFO,  # Nivel mínimo de mensajes a mostrar
+#     # format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Formato del mensaje
+#     format=' %(message)s',  # Formato del mensaje
+# )
+
+logger = logging.getLogger(__name__)
 
 def busca_destinatario(rsocial='', codpostal='', cpais=''):
     largo = len(rsocial)
@@ -26,21 +36,22 @@ def busca_destinatario(rsocial='', codpostal='', cpais=''):
         # query_codpost = f"{query} AND ccodpos = '{codpostal}'"
 
         respuesta_query = bm.consulta_(query)
-        if respuesta_query["cod_error"] != 200:
+        if respuesta_query["status_code"] != 200:
             return respuesta_default
         contenido = respuesta_query.get("contenido", [])
 
         if len(contenido) == 1:
-            print(f"\n\n\n Devuelve {contenido[0]['ient']}\n\n\n")
+            logger.info(f"\nDevuelve {contenido[0]['ient']}\n")
             return contenido[0]
 
         elif len(contenido) > 1:
-            print("Respuesta Query con denominación de origen")
+            logger.info("\nRespuesta Query con denominación de origen")
             for entidad in contenido:
-                print(
-                    f"{entidad['ient']} ---> {entidad['dnomfis']} ---> {entidad['cemp']} Codpostal: {entidad['ccodpos']}")
+                logger.info(f"\n{entidad['ient']} ---> {entidad['dnomfis']} ---> {entidad['cemp']} "
+                            f"Codpostal: {entidad['ccodpos']}")
+
                 if entidad['ccodpos'] == codpostal.replace(" ", ""):
                     return entidad
 
-    print(f"BUSCA DESTINATIARIO {rsocial} Codigo postal: {codpostal}: No lo encuentro")
+    logger.info( f"\nNO SE ENCUENTRA EL DESTINATARIO {rsocial} con codigo postal: {codpostal}")
     return respuesta_default

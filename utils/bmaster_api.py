@@ -1,7 +1,7 @@
 import requests
 from requests.exceptions import HTTPError
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 import os
 from dotenv import load_dotenv
 from utils.safe_get_token import safe_get_token
@@ -39,9 +39,9 @@ class BmasterApi:
         try:
             return self.peticion_post(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
 
     def post_entrada(self, data_json):
@@ -49,9 +49,9 @@ class BmasterApi:
         try:
             return self.peticion_post(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
 
     def post_entrada_linea(self, line_id=0, data_json=None):
@@ -61,9 +61,9 @@ class BmasterApi:
         try:
             return self.peticion_post(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
 
     def post_entrada_etiqueta(self, data_json=None, ialment=0):
@@ -73,9 +73,9 @@ class BmasterApi:
         try:
             return self.peticion_post(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
 
     def put_entrada(self, data_json=None, ialment=0):
@@ -85,9 +85,9 @@ class BmasterApi:
         try:
             return self.peticion_put(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
 
     def post_expediente_hito(self, data_json,id_expediente):
@@ -95,9 +95,9 @@ class BmasterApi:
         try:
             return self.peticion_post(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
 
     def post_albaran_vinculos(self, alvi_id, data_json):
@@ -105,9 +105,9 @@ class BmasterApi:
         try:
             return self.peticion_post(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
 
     def post_albaran_vinculos_tracking(self, vitr_id, data_json):
@@ -115,9 +115,9 @@ class BmasterApi:
         try:
             return self.peticion_post(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
 
     def get_albaran_vinculos(self, itdialb):
@@ -125,9 +125,9 @@ class BmasterApi:
         try:
             return self.peticion_get(url_)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
 
     def post_partida_tracking(self, ipda, data_json):
@@ -135,9 +135,9 @@ class BmasterApi:
         try:
             return self.peticion_post(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
     
     def post_partida(self, data_json):
@@ -145,9 +145,9 @@ class BmasterApi:
         try:
             return self.peticion_post(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
     
     def put_partida(self, ipda=0, data_json=None):
@@ -157,9 +157,9 @@ class BmasterApi:
         try:
             return self.peticion_put(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
    
     def post_partida_vinculos(self, ipda, data_json):
@@ -167,9 +167,9 @@ class BmasterApi:
         try:
             return self.peticion_post(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
     
     def post_partida_vinculos_tracking(self, vitr_id, data_json):
@@ -177,9 +177,9 @@ class BmasterApi:
         try:
             return self.peticion_post(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
    
     def post_partida_lineas_mercancia(self, lime_id, data_json):
@@ -187,9 +187,9 @@ class BmasterApi:
         try:
             return self.peticion_post(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
     
     def post_partida_etiqueta(self, paet_id, data_json):
@@ -197,9 +197,9 @@ class BmasterApi:
         try:
             return self.peticion_post(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
     
     def get_partida_vinculos(self, ipda=0):
@@ -207,9 +207,9 @@ class BmasterApi:
         try:
             return self.peticion_get(url_)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
 
     def get_partida_relacionados(self, ipda=0):
@@ -217,9 +217,9 @@ class BmasterApi:
         try:
             return self.peticion_get(url_)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
 
     def get_partida(self, ipda):
@@ -228,9 +228,9 @@ class BmasterApi:
             respuesta= requests.get(url_,headers=self.headers)
             return respuesta.json()
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
 
     def post_albaran_entrada(self, data_json):
@@ -238,9 +238,9 @@ class BmasterApi:
         try:
             return self.peticion_post(url_,data_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
 
 
     def consulta_(self, query):  # sourcery skip: extract-duplicate-method
@@ -305,17 +305,15 @@ class BmasterApi:
             resp_dic["contenido"] = [{"error": "Error inesperado"}]
             return resp_dic
 
-
-
     def peticion_post(self,url, _json):
         resp_dic = {}
         try:
             peticion=requests.post(url,json=_json,headers=self.headers)
             resp_dic = {"status_code": peticion.status_code, "contenido": peticion.json()}
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
         return resp_dic
 
     
@@ -325,9 +323,9 @@ class BmasterApi:
             peticion = requests.put(url,json=_json,headers=self.headers)
             resp_dic = {"status_code": peticion.status_code, "contenido": peticion.json()}
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
         return resp_dic  #peticion.json()
 
     
@@ -337,9 +335,9 @@ class BmasterApi:
             peticion = requests.get(url,headers=self.headers)
             resp_dic = {"status_code": peticion.status_code, "contenido": peticion.json()}
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
         return resp_dic  #peticion.json()
 
     
@@ -349,9 +347,9 @@ class BmasterApi:
         try:
             peticion=self.peticion_post( url_, cabecera)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
         return peticion
 
     
@@ -363,7 +361,7 @@ class BmasterApi:
         try:
             peticion=self.peticion_post( url_, linea_json)
         except HTTPError as e:
-            print (e.strerror)
+            print(e.strerror)
         except Exception as fallo:
-            print (fallo)
+            print(fallo)
         return peticion     
