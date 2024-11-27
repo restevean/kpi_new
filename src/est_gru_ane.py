@@ -172,7 +172,6 @@ class EstadoGruAne:
                 if file_attrs.get("message")
                 else f"No se crearon partidas para el archivo: {file_name}"
             )
-            # print(f"Email body: {self.email_body}")
             email_sender.send_email(self.email_from, self.email_to, self.email_subject, self.email_body)
         n_sftp.disconnect()
 

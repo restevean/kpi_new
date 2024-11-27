@@ -9,6 +9,7 @@ from utils.bordero import BorderoArcese
 from utils.bmaster_api import BmasterApi as BmApi
 from utils.misc import n_ref
 from utils.buscar_empresa import busca_destinatario
+from utils.send_email import EmailSender
 # import psycopg2
 
 # Activamos logging
@@ -40,6 +41,8 @@ class PartidaArcAne:
         self.sftp_user = os.getenv("SFTP_USER_ARC")
         self.sftp_pw = os.getenv("SFTP_PW_ARC")
         self.sftp_port = os.getenv("SFTP_PORT_ARC")
+        self.email_from = "javier@kpianalisis.com"
+        self.email_to = "resteve24@gmail.com"
         self.remote_work_out_directory = os.getenv("SFTP_PDA_PATH_ARC")
         self.local_work_directory = "../fixtures/arc/edi"
         self.local_work_pof_process = "/process_pending"
@@ -189,6 +192,7 @@ class PartidaArcAne:
     def download_files(self):
         # sourcery skip: extract-method, swap-if-else-branches, use-named-expression
         n_sftp = SftpConnection()
+
         try:
             logger.info("\nEstableciendo conexión SFTP...")
             n_sftp.connect(self.sftp_url, self.sftp_port, self.sftp_user, self.sftp_pw)
@@ -243,6 +247,7 @@ class PartidaArcAne:
     def files_process(self, n_path):
         logger.info("\nIniciando el procesamiento de archivos...")
         bm = BmApi()
+        email_sender = EmailSender()
         encontrado_expediente = False
         mensaje = ""
 
@@ -381,19 +386,13 @@ class PartidaArcAne:
         # Movemos los archivos a processed o process_pending según corresponda
         # Enviamos los correos
         for file, info in self.files.items():
-
+            email_sender.send_email("javier@kpianalisis.com", self.email_to, f"Partida: {cpda}", info["message"])
             # Movemos a las carpetas según el resultado del proceso
             if info["process_again"]:
                 os.rename(info["path"], f"{self.local_work_directory}{self.local_work_pof_process}/{file}")
             else:
                 os.rename(info["path"], f"{self.local_work_directory}{self.local_work_processed}/{file}")
 
-
-        ...
-
-        # TODO Preguntas:
-        # ¿LOCAL. Qué hacemos con los ficheros procesados con éxito?
-        # ¿FTP. Qué hacemos con los ficheros descargado correctamente?
 
     def run(self):
 
