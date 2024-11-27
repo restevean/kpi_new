@@ -212,8 +212,13 @@ class PartidaArcAne:
             else:
                 for file in archivos_filtrados:
                     local_path = os.path.join(self.local_work_directory, file)
-                    logger.info(f"\nDescargando {file} a {local_path}")
-                    n_sftp.sftp.get(file, local_path)
+                    try:
+                        logger.info(f"\nDescargando {file} a {local_path}")
+                        n_sftp.sftp.get(file, local_path)
+                        # logger.info(f"Eliminando {file} del servidor SFTP")
+                        # n_sftp.sftp.remove(file)
+                    except Exception as e:
+                        logger.error(f"Error al descargar {file}: {e}")
                 logger.info("\nDescarga de archivos completada.")
 
         except Exception as e:
@@ -228,13 +233,12 @@ class PartidaArcAne:
             file: {
                 "success": False,
                 "n_message": "",
-                "process_again": False
+                "process_again": False,
+                "path": ""
             }
             for file in os.listdir(directory)
             if os.path.isfile(os.path.join(directory, file)) and 'BOLLE' in file
         }
-
-
 
     def files_process(self, n_path):
         logger.info("\nIniciando el procesamiento de archivos...")
@@ -244,6 +248,8 @@ class PartidaArcAne:
 
         for file, info in self.files.items():
             file_path = os.path.join(n_path, file)
+            info['path'] = file_path
+
             try:
                 logger.info(f"\nProcesando archivo: {file_path}")
 
@@ -259,8 +265,9 @@ class PartidaArcAne:
                         if fila[:2] == '01':
                             cab_partida = ba.cabecera_arcese(fila=fila)
                             trip = ba.expediente_ref_cor()  # 2024MO12103
+
+                            # Buscamos el expediente
                             query = f"select * from traexp where nrefcor in ('{trip}', '{n_ref(trip)}')"
-                            # query = "select * from traexp where nrefcor in ('" + trip + "','" + n_ref(trip) + "')"
                             query_reply = bm.n_consulta(query=query)
 
                             # Si la consulta tiene contenido (si hay expediente)
@@ -302,21 +309,19 @@ class PartidaArcAne:
                                             f"ref corresponsal: {n_ref(cab_partida['Order Full Number'].strip())}\n")
 
                             # Si no tiene expediente por primera vez
-                            elif self.local_work_pof_process not in n_path:
+                            else:  # self.local_work_pof_process not in n_path:
                                 # Marcamos el fichero para moverlo a process_pending
                                 self.files[file]["process_again"] = True
                                 # Asignamos el mensaje del correo
                                 self.files[file]["n_message"] = mensaje
 
-                                ...
                             # Si no tiene expediente y es de repesca
-                            else:
+                            # else:
                                 # El fichero ya está en el path adecuado
                                 # Ya se envió correo
                                 # Asignamos el mensaje del correo
                                 # self.files[file]["n_message"] = mensaje
-                                ...
-
+                                # ...
 
                         # No es cabecera y se ha encontrado expediente (LINEAS)
                         elif encontrado_expediente:
@@ -326,21 +331,9 @@ class PartidaArcAne:
                             if ipda > 0 and n_linea["Barcode"].strip():
 
                                 # Comprobamos que no existe ese bulto
-
                                 query_barcode = query = (f"SELECT COUNT(1) AS cuenta FROM ttemereti WHERE ipda={ipda} "
                                                          f"AND dcodbar='{n_linea['Barcode'].strip()}'")
                                 query_barcode_reply = bm.n_consulta(query=query_barcode)
-
-                                # Evitamos inyecciones SQL
-                                # conn = psycopg2.connect("dbname=mi_base_de_datos user=usuario password=contrasena")
-                                # cursor = conn.cursor()
-                                # ipda_value = ipda
-                                # barcode_value = n_linea["Barcode"].strip()
-                                # query_barcode = ("SELECT COUNT(1) AS cuenta FROM ttemereti WHERE ipda = %s AND dcodbar "
-                                #                  "= %s")
-                                # params = (ipda_value, barcode_value)
-                                # cursor.execute(query_barcode, params)
-                                # query_barcode_reply = cursor.fetchone()
 
                                 # Si no existe el bulto
                                 if not query_barcode_reply:
@@ -361,12 +354,18 @@ class PartidaArcAne:
                                         mensaje += (f"\nYa existe la etiqueta {n_linea['Barcode'].strip()} "
                                                     f"de la "
                                                     f"partida {cpda}")
+                                # Si existe el bulto
                                 else:
                                     logging.info("Bulto encontrado")
 
-                    ba.genera_json_bordero(path=f"{self.local_work_directory}Bordero_{trip}{file}")
+                            else:
+                                logging.info(f"No es cabecera, cpda: {cpda}, ipda: {ipda}, barcode: {n_linea['Barcode'].strip()}")
+                                ...
 
-                ...
+                    if not info["process_again"]:
+                        ba.genera_json_bordero(path=f"{self.local_work_directory}{self.local_work_processed}/Bordero"
+                                                f"_{trip}{file}")
+
                 info["success"] = True
                 info["n_message"] = mensaje
                 logger.info(f"Archivo procesado exitosamente {file}.")
@@ -381,26 +380,36 @@ class PartidaArcAne:
 
         # Movemos los archivos a processed o process_pending según corresponda
         # Enviamos los correos
+        for file, info in self.files.items():
+
+            # Movemos a las carpetas según el resultado del proceso
+            if info["process_again"]:
+                os.rename(info["path"], f"{self.local_work_directory}{self.local_work_pof_process}/{file}")
+            else:
+                os.rename(info["path"], f"{self.local_work_directory}{self.local_work_processed}/{file}")
+
+
         ...
 
         # TODO Preguntas:
-        # ¿ LOCAL. Qué hacemos con los ficheros procesados con exito?
-        # ¿ FTP. Qué hacemos con los ficheros descargado correctamente?
+        # ¿LOCAL. Qué hacemos con los ficheros procesados con éxito?
+        # ¿FTP. Qué hacemos con los ficheros descargado correctamente?
 
     def run(self):
 
         # Nos ocupamos primero de los descargados antes y sin iexp/cexp
-        # logger.info("\nIniciando proceso de archivos que estaban pendientes de procesar")
+        logger.info("\nIniciando proceso de archivos que estaban pendientes de procesar")
         pda_arc = PartidaArcAne()
-        # pda_arc.files = self.load_dir_files(self.local_work_pof_process)
-        # if pda_arc.files:
-        #     pda_arc.files_process(f"{self.local_work_directory}{self.local_work_pof_process}")
-        #     logging.info("Procesados los archivos que estaban pendientes de procesar")
+        pda_arc.files = self.load_dir_files(self.local_work_pof_process)
+        if pda_arc.files:
+            pda_arc.files_process(f"{self.local_work_directory}{self.local_work_pof_process}")
+            logging.info("Procesados los archivos que estaban pendientes de procesar")
 
         # Procesamos los recién descargados del FTP
         logger.info("\nIniciando proceso de archivos descargados")
         logger.info("Descargando nuevos archivos")
         pda_arc.download_files()
+        # pda_arc.files = None
         pda_arc.files = self.load_dir_files()
         if pda_arc.files:
             pda_arc.files_process(f"{self.local_work_directory}")
