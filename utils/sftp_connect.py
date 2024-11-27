@@ -18,14 +18,12 @@ class SftpConnection:
         self.username = os.getenv("SFTP_USER")
         self.password = os.getenv("SFTP_PW")
         self.port = int(os.getenv("SFTP_PORT"))
-        # self.local_work_directory = "../fixtures"
-        # self.remote_work_directory = "/IN/STAT_TEST"
         self.sftp = None
         self.transport = None
 
-    def connect(self):
-        self.transport = paramiko.Transport((self.host, self.port))
-        self.transport.connect(username=self.username, password=self.password)  # Conectar usando la contraseña
+    def connect(self, host=SFTP_SERVER, port=SFTP_PORT, username=SFTP_USER, password=SFTP_PW):
+        self.transport = paramiko.Transport((host, int(port)))
+        self.transport.connect(username=username, password=password)  # Conectar usando la contraseña
         self.sftp = paramiko.SFTPClient.from_transport(self.transport)
         print("Conexión establecida")
 

@@ -9,10 +9,12 @@ from utils.bordero import BorderoArcese
 from utils.bmaster_api import BmasterApi as BmApi
 from utils.misc import n_ref
 from utils.buscar_empresa import busca_destinatario
+# import psycopg2
 
+# Activamos logging
 logging.basicConfig(
-    level=logging.INFO,  # Nivel mínimo de mensajes a mostrar
-    format='%(message)s',  # Formato del mensaje
+    level=logging.INFO,     # Nivel mínimo de mensajes a mostrar
+    format='%(message)s',   # Formato del mensaje
     # format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Formato del mensaje
 )
 
@@ -38,7 +40,7 @@ class PartidaArcAne:
         self.sftp_user = os.getenv("SFTP_USER_ARC")
         self.sftp_pw = os.getenv("SFTP_PW_ARC")
         self.sftp_port = os.getenv("SFTP_PORT_ARC")
-        self.remote_work_out_directory = os.getenv("PDA_PATH_ARC")
+        self.remote_work_out_directory = os.getenv("SFTP_PDA_PATH_ARC")
         self.local_work_directory = "../fixtures/arc/edi"
         self.local_work_pof_process = "/process_pending"
         self.local_work_processed = "/processed"
@@ -189,7 +191,7 @@ class PartidaArcAne:
         n_sftp = SftpConnection()
         try:
             logger.info("\nEstableciendo conexión SFTP...")
-            n_sftp.connect()
+            n_sftp.connect(self.sftp_url, self.sftp_port, self.sftp_user, self.sftp_pw)
             logger.info("\nConexión SFTP establecida correctamente.")
 
             if not os.path.exists(self.local_work_directory):
@@ -226,7 +228,7 @@ class PartidaArcAne:
             file: {
                 "success": False,
                 "n_message": "",
-                "to_move": False
+                "process_again": False
             }
             for file in os.listdir(directory)
             if os.path.isfile(os.path.join(directory, file)) and 'BOLLE' in file
@@ -234,7 +236,7 @@ class PartidaArcAne:
 
 
 
-    def file_process(self, n_path):
+    def files_process(self, n_path):
         logger.info("\nIniciando el procesamiento de archivos...")
         bm = BmApi()
         encontrado_expediente = False
@@ -244,11 +246,15 @@ class PartidaArcAne:
             file_path = os.path.join(n_path, file)
             try:
                 logger.info(f"\nProcesando archivo: {file_path}")
-                # Proceso del archivo individual
-                ba = BorderoArcese()
-                with open(file_path, 'rt') as archivo:
-                    for fila in archivo:
 
+                # Proceso del archivo individual
+                with open(file_path, 'rt') as archivo:
+                    ipda = 0
+                    cpda = ""
+                    ba = BorderoArcese()
+
+                    # Procesamos la fila
+                    for fila in archivo:
                         # Si es cabecera
                         if fila[:2] == '01':
                             cab_partida = ba.cabecera_arcese(fila=fila)
@@ -260,8 +266,9 @@ class PartidaArcAne:
                             # Si la consulta tiene contenido (si hay expediente)
                             if query_reply["contenido"]:
                                 encontrado_expediente = True
-                                mensaje += f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}"
-                                logger.info(f"\nEncontrado expediente {query_reply["contenido"][0]["cexp"]}")
+                                if f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}" not in mensaje:
+                                    mensaje += f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}"
+                                    logger.info(f"\nEncontrado expediente {query_reply["contenido"][0]["cexp"]}")
                                 expediente_bm = query_reply["contenido"][0]
                                 pda_json_arc = self.partida_json(cabecera=cab_partida, expediente=expediente_bm)
 
@@ -271,17 +278,17 @@ class PartidaArcAne:
                                 # Buscamos la partida
                                 query_existe_reply = bm.n_consulta(query=query_existe)
 
-                                # Si no existe, enchufamos partida
+                                # Si no existe la partidda, enchufamos partida
                                 if not query_existe_reply["contenido"]:
                                     resp_partida = bm.post_partida(data_json=pda_json_arc)
 
-                                    # Si exito
+                                    # Si exito al enchufar la partida
                                     if resp_partida["status_code"] == 201:
                                         ipda = resp_partida["contenido"]["id"]
                                         cpda = resp_partida["contenido"]["codigo"]
                                         mensaje += f"\nCreada partida {resp_partida['contenido']['codigo']}"
 
-                                    # Si falla
+                                    # Si falla comunicar la partida
                                     else:
                                         errores = "\n".join(
                                             e["Descripcion"] for e in resp_partida["contenido"]["Errores"])
@@ -297,11 +304,12 @@ class PartidaArcAne:
                             # Si no tiene expediente por primera vez
                             elif self.local_work_pof_process not in n_path:
                                 # Marcamos el fichero para moverlo a process_pending
-                                self.files[file]["to_move"] = True
+                                self.files[file]["process_again"] = True
                                 # Asignamos el mensaje del correo
                                 self.files[file]["n_message"] = mensaje
 
                                 ...
+                            # Si no tiene expediente y es de repesca
                             else:
                                 # El fichero ya está en el path adecuado
                                 # Ya se envió correo
@@ -310,39 +318,93 @@ class PartidaArcAne:
                                 ...
 
 
-                        # No es cabecera y se ha encontrado expediente
+                        # No es cabecera y se ha encontrado expediente (LINEAS)
                         elif encontrado_expediente:
+                            n_linea = ba.linea_arcese(fila)
 
-                            ...
-                # Renombramos (movemos) los que han dado error
+                            # Si tiene nº ipda (partida) y barcode (algún bulto)
+                            if ipda > 0 and n_linea["Barcode"].strip():
+
+                                # Comprobamos que no existe ese bulto
+
+                                query_barcode = query = (f"SELECT COUNT(1) AS cuenta FROM ttemereti WHERE ipda={ipda} "
+                                                         f"AND dcodbar='{n_linea['Barcode'].strip()}'")
+                                query_barcode_reply = bm.n_consulta(query=query_barcode)
+
+                                # Evitamos inyecciones SQL
+                                # conn = psycopg2.connect("dbname=mi_base_de_datos user=usuario password=contrasena")
+                                # cursor = conn.cursor()
+                                # ipda_value = ipda
+                                # barcode_value = n_linea["Barcode"].strip()
+                                # query_barcode = ("SELECT COUNT(1) AS cuenta FROM ttemereti WHERE ipda = %s AND dcodbar "
+                                #                  "= %s")
+                                # params = (ipda_value, barcode_value)
+                                # cursor.execute(query_barcode, params)
+                                # query_barcode_reply = cursor.fetchone()
+
+                                # Si no existe el bulto
+                                if not query_barcode_reply:
+                                    json_etiqueta = {
+                                        "codigobarras": n_linea["Barcode"].strip(),
+                                        "altura": float(n_linea["Hight"].strip()) / 100,
+                                        "ancho": float(n_linea["Width"].strip()) / 100,
+                                        "largo": float(n_linea["Lenght"].strip()) / 100,
+                                    }
+                                    #  Enchufamos el bulto
+                                    resp_etiqueta = bm.post_partida_etiqueta(id=ipda, data_json=json_etiqueta)
+
+                                    # Actualizamos el emnsaje en función del resultado
+                                    if resp_etiqueta["cod_error"] == 201:
+                                        mensaje += f"Subida Etiqueta. {n_linea['Barcode'].strip()}\n\n"
+
+                                    else:
+                                        mensaje += (f"\nYa existe la etiqueta {n_linea['Barcode'].strip()} "
+                                                    f"de la "
+                                                    f"partida {cpda}")
+                                else:
+                                    logging.info("Bulto encontrado")
+
+                    ba.genera_json_bordero(path=f"{self.local_work_directory}Bordero_{trip}{file}")
 
                 ...
                 info["success"] = True
-                info["n_message"] = "Procesado correctamente."
-                logger.info(f"\nArchivo {file} procesado exitosamente.")
+                info["n_message"] = mensaje
+                logger.info(f"Archivo procesado exitosamente {file}.")
             except Exception as e:
                 info["success"] = False
-                info["n_message"] = str(e)
-                logger.error(f"\nError al procesar {file}: {e}")
+                mensaje += str(e)
+                info["n_message"] = mensaje
+                logger.error(f"\nError al procesar {file}: {e}\n")
+            # finally:
+                # logger.info("Procesamiento de archivo completado.")
 
 
-        logger.info("\nProcesamiento de archivos completado.")
+        # Movemos los archivos a processed o process_pending según corresponda
+        # Enviamos los correos
+        ...
+
+        # TODO Preguntas:
+        # ¿ LOCAL. Qué hacemos con los ficheros procesados con exito?
+        # ¿ FTP. Qué hacemos con los ficheros descargado correctamente?
 
     def run(self):
 
         # Nos ocupamos primero de los descargados antes y sin iexp/cexp
-        logger.info("\nIniciando proceso de archivos pendientes de nrefcor")
+        # logger.info("\nIniciando proceso de archivos que estaban pendientes de procesar")
         pda_arc = PartidaArcAne()
-        pda_arc.files = self.load_dir_files(self.local_work_pof_process)
-        pda_arc.file_process(f"{self.local_work_directory}{self.local_work_pof_process}")
-
-        # Ahora procesamos los recién descargados
-        # logger.info("\nDescargando nuevos archivos")
-        # pda_arc.download_files()
-        # pda_arc.files = self.load_dir_files()
+        # pda_arc.files = self.load_dir_files(self.local_work_pof_process)
         # if pda_arc.files:
-        #     pda_arc.file_process(f"{self.load_dir_files}")
-        # logger.info("\nProceso completado")
+        #     pda_arc.files_process(f"{self.local_work_directory}{self.local_work_pof_process}")
+        #     logging.info("Procesados los archivos que estaban pendientes de procesar")
+
+        # Procesamos los recién descargados del FTP
+        logger.info("\nIniciando proceso de archivos descargados")
+        logger.info("Descargando nuevos archivos")
+        pda_arc.download_files()
+        pda_arc.files = self.load_dir_files()
+        if pda_arc.files:
+            pda_arc.files_process(f"{self.local_work_directory}")
+            logging.info("Procesados los archivos descargados de FTP")
 
 
 if __name__ == "__main__":

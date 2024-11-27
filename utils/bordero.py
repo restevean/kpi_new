@@ -1,6 +1,7 @@
 # utils/bordero-py
 
 import json
+import logging
 
 
 class BorderoArcese:
@@ -128,13 +129,18 @@ class BorderoArcese:
     def partida_ref_cor(self):
         return self.cabecera['Order Number'].strip
     
-    def imprimir_bordero(self, path):
-        # TODO Sustituir print() pot logging.info()
-        print("imprimir bordeero")
-        file_cab = open(path+"_Bordero"+self.cabecera['Trip Reference Number'].strip()+".json","wt")
-        file_cab.write(json.dumps(self.bordero, indent=3))
-        file_cab.close()
-    
+    # def imprimir_bordero(self, path):
+    #     print("imprimir bordeero")
+    #     file_cab = open(path+"_Bordero"+self.cabecera['Trip Reference Number'].strip()+".json","wt")
+    #     file_cab.write(json.dumps(self.bordero, indent=3))
+    #     file_cab.close()
+
+    def genera_json_bordero(self, path):
+        logging.info("Imprimiendo bordero")
+        file_name = f"{path}_Bordero{self.cabecera['Trip Reference Number'].strip()}.json"
+        with open(file_name, "wt") as file_cab:
+            json.dump(self.bordero, file_cab, indent=3)
+
     def imprimir_cabecera(self, path=''):
         file_cab = open(path+"_CaB"+self.cabecera['Order Number'].strip()+".json","wt")
         file_cab.write(json.dumps(self.cabecera, indent=3))

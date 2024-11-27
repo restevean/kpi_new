@@ -163,21 +163,20 @@ class MensajeEstado:
                         }
                     )
 
-                # TODO Ojo! if fila[:3] == "Q30": se asignan claves repetidas ul diccionario
                 if fila[:3] == "Q30": #linea
                     resultado["Lineas"].append(
                         {
                             'Record type ‘Q30’': fila[:3],
-                            'Reference qualifier': fila[3:6],
-                            'Reference data': fila[6:41],
-                            'Reference qualifier': fila[41:44],
-                            'Reference data': fila[44:79],
-                            'Reference qualifier': fila[79:82],
-                            'Reference data': fila[82:117],
-                            'Reference qualifier': fila[117:120],
-                            'Reference data': fila[120:155],
-                            'Reference qualifier': fila[155:158],
-                            'Reference data': fila[158:193],
+                            'Reference qualifier 01': fila[3:6],
+                            'Reference data 01': fila[6:41],
+                            'Reference qualifier 02': fila[41:44],
+                            'Reference data 02': fila[44:79],
+                            'Reference qualifier 03': fila[79:82],
+                            'Reference data 03': fila[82:117],
+                            'Reference qualifier 04': fila[117:120],
+                            'Reference data 04': fila[120:155],
+                            'Reference qualifier 05': fila[155:158],
+                            'Reference data 05': fila[158:193],
                         }
                     )
                     if fila[:4] == "@@PT": #linea
