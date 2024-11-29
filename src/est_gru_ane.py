@@ -95,9 +95,7 @@ class EstadoGruAne:
                 n_status = lineas.get("Status code")
                 m_query = f"select ipda, * from trapda where nrefcor ='{n_ref_cor}'"
                 # print(m_query)  # Para depuración; elimina en producción
-                query_reply = bm.consulta_(m_query)
                 query_reply = bm.n_consulta(m_query)
-                # print(query_reply)  # Para depuración; elimina en producción
 
                 # Verifica si el contenido está vacío y actualiza el mensaje si es así
                 if "contenido" in query_reply and not query_reply["contenido"]:

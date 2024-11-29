@@ -25,6 +25,50 @@ class MensajeEstado:
             return m_string
         self.contenido += m_string
 
+    def header_arc(self, action=None):
+        m_string = "01" # 'Record Type': linea[0:2],
+        m_string += " " * 20    # 'Order Number': linea[2:22],
+        m_string += " " * 8     # 'Order Date': linea[22:30],
+        m_string += " " * 10    # 'Customer Sender Code': linea[30:40],
+        m_string += " " * 20    # 'Tranport Document Number': linea[40:60],
+        m_string += " " * 8     # 'Tranport Document Date': linea[60:68],
+        m_string += " " * 10    # 'Warehouse ID': linea[68:78],
+        m_string += " "         # 'Document Type': linea[78:79],
+        m_string += " " * 20    # 'Customer Reference': linea[79:99],
+        m_string += " " * 20    # 'Agent Reference': linea[99:119],
+        m_string += " " * 20    # 'Trip Number': linea[119:139],
+        m_string += " " * 20    # 'Agent Trip': linea[139:159],
+        m_string += " " * 10    # 'EventCode': linea[159:169],
+        m_string += " " * 35    # 'Event Description': linea[169:204],
+        m_string += " " * 8     # 'Event Date': linea[204:212],
+        m_string += " " * 4     # 'Event Time': linea[212:216],
+        m_string += " " * 20    # 'EventPlaceID': linea[216:236],
+        m_string += " " * 35    # 'Sender Company Name': linea[236:271],
+        m_string += " " * 35    # 'Sender Address': linea[271:306],
+        m_string += " " * 35    # 'Sender Place': linea[306:341],
+        m_string += " " * 2     # 'Sender District': linea[341:343],
+        m_string += " " * 5     # 'Sender ZipCode': linea[343:348],
+        m_string += " " * 3     # 'Sender Country Code': linea[348:351],
+        m_string += " " * 15    # 'Sender Contact': linea[351:366],
+        m_string += " " * 50    # 'Sender Notes': linea[366:416],
+        m_string += " " * 10    # 'ConsigneeID': linea[416:426],
+        m_string += " " * 35    # 'Consignee Company Name': linea[426:461],
+        m_string += " " * 35    # 'Consignee Address': linea[461:496],
+        m_string += " " * 35    # 'Consignee Place': linea[496:531],
+        m_string += " " * 2     # 'Consignee District': linea[531:533],
+        m_string += " " * 5     # 'Consignee ZipCode': linea[533:538],
+        m_string += " " * 3     # 'Consignee Country Code': linea[538:541],
+        m_string += " " * 15    # 'Consignee Contact': linea[541:556],
+        m_string += " " * 50    # 'Consignee Notes': linea[556:606],
+        m_string += " " * 8     # 'Total GrossWeight': linea[606:614],
+        m_string += " " * 8     # 'Total Volume': linea[614:622],
+        m_string += " " * 4     # 'Quantity': linea[622:626],
+        m_string += " " * 200   # 'Remark': linea[626:826],
+                                # "Linea": []}
+        if action == "w":
+            return m_string
+        self.contenido += m_string
+
 
     def header_q00(self, action=None):
         m_string = "Q00" + "100"
@@ -67,51 +111,73 @@ class MensajeEstado:
 
 
     @staticmethod
-    def leer_stat_arcese(fichero):
-        resultado= {"Lineas": []}
+    def leer_stat_arcese(self, fichero):
 
-        with open (fichero, "rt") as f:
+        resultado = []
+        icab = -1
+
+        with open(fichero, "rt") as f:
             for linea in f:
-                print(linea[:11])
-                if linea[:11] == "@@PHSTAT512": #Mensaje tipo estado
-                    resultado["header"] = linea
-                if linea[:3] == "Q00": #cabecera
-                    resultado["Q00"] = {
-                        "recordType": linea[:3],
-                        "releaseVersion": linea[3:6],
-                        "codeList": linea[6:9],
-                        "consignorId": linea[9:44],
-                        "consigneeId": linea[44:79],
-                        "causingPartyId": linea[79:114],
-                        "routingId1": linea[114:149],
-                        "routingId2": linea[149:174],
+                if (linea[:2] == "01"):  # linea
+                    cabecera = {
+                        'Record Type': linea[0:2],
+                        'Order Number': linea[2:22],
+                        'Order Date': linea[22:30],
+                        'Customer Sender Code': linea[30:40],
+                        'Tranport Document Number': linea[40:60],
+                        'Tranport Document Date': linea[60:68],
+                        'Warehouse ID': linea[68:78],
+                        'Document Type': linea[78:79],
+                        'Customer Reference': linea[79:99],
+                        'Agent Reference': linea[99:119],
+                        'Trip Number': linea[119:139],
+                        'Agent Trip': linea[139:159],
+                        'EventCode': linea[159:169],
+                        'Event Description': linea[169:204],
+                        'Event Date': linea[204:212],
+                        'Event Time': linea[212:216],
+                        'EventPlaceID': linea[216:236],
+                        'Sender Company Name': linea[236:271],
+                        'Sender Address': linea[271:306],
+                        'Sender Place': linea[306:341],
+                        'Sender District': linea[341:343],
+                        'Sender ZipCode': linea[343:348],
+                        'Sender Country Code': linea[348:351],
+                        'Sender Contact': linea[351:366],
+                        'Sender Notes': linea[366:416],
+                        'ConsigneeID': linea[416:426],
+                        'Consignee Company Name': linea[426:461],
+                        'Consignee Address': linea[461:496],
+                        'Consignee Place': linea[496:531],
+                        'Consignee District': linea[531:533],
+                        'Consignee ZipCode': linea[533:538],
+                        'Consignee Country Code': linea[538:541],
+                        'Consignee Contact': linea[541:556],
+                        'Consignee Notes': linea[556:606],
+                        'Total GrossWeight': linea[606:614],
+                        'Total Volume': linea[614:622],
+                        'Quantity': linea[622:626],
+                        'Remark': linea[626:826],
+                        "Linea": []}
+                    resultado.append(cabecera)
+
+                    icab += 1
+
+                if (linea[:2] == "02"):  # linea
+                    lineaQ10 = {
+                        'Record Type': linea[0:2],
+                        'Order Number': linea[2:22],
+                        'Order Date': linea[22:30],
+                        'Customer Sender Code': linea[30:40],
+                        'Tranport Document Number': linea[40:60],
+                        'Tranport Document Date': linea[60:68],
+                        'EventCode': linea[68:78],
+                        'Event Date': linea[78:86],
+                        'Event Time': linea[86:90],
+                        'Barcode': linea[90:108]
                     }
-                if linea[:3] == "Q10": #linea
-                    resultado["Lineas"].append(
-                        {
-                            "recordType": linea[:3],
-                            "consignmentNumberSendingDepot": linea[3:38],
-                            "consignmentNumberReceivingDepot": linea[38:73],
-                            "pickupOrderNumber": linea[73:108],
-                            "statusCode": linea[108:111],
-                            "dateOfEvent": linea[111:119],
-                            "timeOfEvent": linea[119:123],
-                            "consignmentNumberDeliveringParty": linea[123:158],
-                            "waitDowntimeMinutes": linea[158:162],
-                            "nameOfAcknowledgingParty": linea[162:197],
-                            "additionalText": linea[197:267],
-                            "referenceNumber": linea[267:279],
-                        }
-                    )
-                if linea[:3] == "Q11": #linea
-                    resultado["Lineas"].append(
-                        {
-                            "recordType": linea[:3],
-                            "additionalText1": linea[3:73],
-                            "additionalText2": linea[73:143],
-                            "additionalText3": linea[143:213],
-                        }
-                    )
+                    resultado[icab]["Linea"].append(lineaQ10)
+        return resultado
 
     @staticmethod
     def leer_stat_gruber(fichero):

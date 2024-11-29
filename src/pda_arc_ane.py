@@ -190,7 +190,7 @@ class PartidaArcAne:
         return partida_json
 
     def download_files(self):
-        # sourcery skip: extract-method, swap-if-else-branches, use-named-expression
+
         n_sftp = SftpConnection()
 
         try:

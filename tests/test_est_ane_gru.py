@@ -431,11 +431,7 @@ def test_process_query_response(estado_ane_gru_fixture):
             {'status_code': 'ANXE06', 'date_of_event': '2023-01-03', 'time_of_event': '14:00:00'}
         ])
 
-
 def test_actualizar_comunicado_success(estado_ane_gru_fixture):
-    """
-    Test del método actualizar_comunicado para asegurar que maneja correctamente las actualizaciones exitosas.
-    """
     estado, mock_bm = estado_ane_gru_fixture
     estado.partidas = {
         'CPDA001': {
@@ -444,13 +440,23 @@ def test_actualizar_comunicado_success(estado_ane_gru_fixture):
         },
         'CPDA002': {
             'ipda': 'IPDA002',
-            'success': False  # No debe procesarse
+            'success': False
         },
         'CPDA003': {
             'ipda': None,
-            'success': True  # Debe ser ignorado por falta de 'ipda'
+            'success': True
         },
     }
+
+    mock_bm.post_partida_tracking.return_value = {
+        'status_code': 200,
+        'contenido': {"resultado": "éxito"}
+    }
+
+    estado.actualizar_comunicado()
+
+    # Validar la actualización
+    assert estado.max_itrk == {"resultado": "éxito"}
 
     # Configurar la respuesta mockeada para post_partida_tracking
     mock_bm.post_partida_tracking.return_value = {
