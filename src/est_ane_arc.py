@@ -11,14 +11,15 @@ import logging
 from datetime import datetime
 import paramiko
 
+
 # Activamos logging
 logging.basicConfig(
     level=logging.INFO,     # Nivel mínimo de mensajes a mostrar
     format='%(message)s',   # Formato del mensaje
     # format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Formato del mensaje
 )
-
 logger = logging.getLogger(__name__)
+
 
 load_dotenv(dotenv_path="../conf/.env.base")
 ENTORNO = os.getenv("ENTORNO")
@@ -136,9 +137,7 @@ class EstadoAneArc:
                     AND YEAR(fhit) * 100 + MONTH(fhit) > 202409;
                     """
 
-
     def procesa_partida(self, cpda, lines):
-
         number_of_records = len(lines)
         txt_file_content = ""
         for line in lines:
@@ -168,11 +167,10 @@ class EstadoAneArc:
             # os.remove(local_file_path)
             logging.info("8P")
         else:
-            print(f"Fallo al subir el archivo para cpda {cpda}")
+            logging.info(f"Fallo al subir el archivo para cpda {cpda}")
 
-        # print(txt_file_content)
+        # logging.info(txt_file_content)
         return txt_file_content
-
 
     def write_txt_file(self, cpda, content):
         filename = f"ESITI_ANEXA_{datetime.now().strftime('%Y%m%d%H%M')}_{cpda}.txt"
@@ -180,8 +178,6 @@ class EstadoAneArc:
         with open(local_file_path, 'w') as f:
             f.write(content)
         return local_file_path  # Devolver la ruta completa del archivo creado
-
-
 
     def process_query_response(self, query_reply):
         self.partidas = {}
@@ -211,9 +207,6 @@ class EstadoAneArc:
             self.procesa_partida(cpda, events)
 
 
-
-
-
     def upload_file(self, local_file_path):
         remote_directory = self.remote_work_in_directory
         remote_file_path = f"{remote_directory}/{os.path.basename(local_file_path)}"
@@ -228,10 +221,8 @@ class EstadoAneArc:
             logging.info("Connection closed")
             return True
         except Exception as e:
-            print(f"Error al subir el archivo {local_file_path} mediante SFTP: {e}")
+            logging.info(f"Error al subir el archivo {local_file_path} mediante SFTP: {e}")
             return False
-
-
 
 
     def actualizar_comunicado(self):
@@ -239,7 +230,7 @@ class EstadoAneArc:
             if data.get('success') is True:
                 ipda = data.get('ipda')
                 if not ipda:
-                    print(f"No se encontró 'ipda' para cpda {cpda}")
+                    logging.info(f"No se encontró 'ipda' para cpda {cpda}")
                     continue
 
                 fechatracking = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
@@ -250,13 +241,13 @@ class EstadoAneArc:
                 }
                 response = self.bm.post_partida_tracking(ipda, tracking_data)
                 if not isinstance(response, dict) or 'status_code' not in response:
-                    print(f"Error al actualizar el comunicado para ipda {ipda}: Respuesta inválida")
+                    logging.info(f"Error al actualizar el comunicado para ipda {ipda}: Respuesta inválida")
                     continue
                 if response['status_code'] not in [200, 201]:
-                    print(
-                        f"Error al actualizar el comunicado para ipda {ipda}: Código de estado {response['status_code']}")
+                    logging.info(f"Error al actualizar el comunicado para ipda {ipda}: Código de estado"
+                       f" {response['status_code']}")
                 else:
-                    print(f"Comunicado actualizado exitosamente para ipda {ipda}, {cpda}")
+                    logging.info(f"Comunicado actualizado exitosamente para ipda {ipda}, {cpda}")
 
 
     def run(self):
@@ -265,13 +256,14 @@ class EstadoAneArc:
         self.max_itrk = df['itrk'].max()
         df = df.fillna("")
         pd.options.display.float_format = '{:.0f}'.format
-        print(df.to_markdown(index=False))
-        print(self.max_itrk)
+        logging.info(df.to_markdown(index=False))
+        logging.info(self.max_itrk)
         self.process_query_response(query_reply)
         # self.actualizar_comunicado()
         second_query_reply = self.bm.n_consulta(self.query_repesca)
         df = pd.DataFrame(second_query_reply['contenido'])
-        print(df.to_markdown(index=False))
+        logging.info(df.to_markdown(index=False))
+        logging.info(df.to_markdown(index=False))
         if second_query_reply.get("contenido"):
             self.partidas = None
             self.process_query_response(second_query_reply)
