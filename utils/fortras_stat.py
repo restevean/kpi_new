@@ -179,6 +179,32 @@ class MensajeEstado:
                     resultado[icab]["Linea"].append(lineaQ10)
         return resultado
 
+    def conversion_stat_arcese_anexa (self, estado =""):
+        conversion_dict = {
+            "TBD": "ANXE01",
+            "COR": "ANXE05", 
+            "CRI": "ANXE07", 
+            "302": "ANXE11", 
+            
+            # "DESCARFAL": ("SMA", "Missing inbound"),
+            # "DESCARFTOT": ("SMA", "Missing inbound"),
+            # "DESCARKO": ("SMA", "Missing inbound"),
+            "SMA": "DESCAROK", 
+            # "ENT001": ("SMA", "Shipment scanned - no difference"),
+            # "ENT004": ("SMA", "Shipment scanned - no difference"),
+            # "ENT011": ("SMA", "Missing inbound"),
+            # "LINTRK02": ("CRI", "Shipment delivered, with remarks"),
+            "402": "SAL001", 
+            "202": "TRA0081"
+            # "TRA0102": ("402", "In delivery"),
+            # "TRA0106": ("COR", "Shipment delivered"),
+        }
+        
+        if estado in conversion_dict:
+            return conversion_dict["estado"]
+        else:
+            return "error"
+    
     @staticmethod
     def leer_stat_gruber(fichero):
         """Leer el estado del fichero de Gruber"""
