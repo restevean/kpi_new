@@ -1,20 +1,27 @@
-# Usa Python 3.12 como base
+# kpi_new/Dockerfile
+
+# Usa Python 3.12 como imagen base
 FROM python:3.12-slim
+
+# Instala dependencias del sistema necesarias
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 # Instala Poetry
 RUN pip install --upgrade pip && pip install poetry
 
 # Establece el directorio de trabajo dentro del contenedor
-WORKDIR /scripts
+WORKDIR /kpi_new/
 
 # Copia los archivos de configuración de Poetry
-COPY pyproject.toml poetry.lock /scripts/
+COPY pyproject.toml poetry.lock /kpi_new/
+
+# Copia el resto de los archivos y directorios, excluyendo lo especificado en .dockerignore
+COPY . /kpi_new/
 
 # Instala las dependencias usando Poetry
 RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi
 
-# Copia los scripts al contenedor
-COPY src/ /scripts/src/
-
-# Comando para mantener el contenedor en ejecución
+# Comando para mantener el contenedor en ejecución (puedes ajustarlo según tus necesidades)
 CMD ["tail", "-f", "/dev/null"]

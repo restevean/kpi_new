@@ -1,6 +1,7 @@
 # src/est_ane_gru.py
 
 import os
+import sys
 from datetime import timezone
 from dotenv import load_dotenv
 from utils.bmaster_api import BmasterApi as BmApi
@@ -10,6 +11,9 @@ import pandas as pd
 import logging
 from datetime import datetime
 import paramiko
+
+
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 
 # Activamos logging
@@ -32,7 +36,7 @@ class EstadoAneArc:
         self.host = os.getenv("SFTP_SERVER_ARC")
         self.username = os.getenv("SFTP_USER_ARC")
         self.password = os.getenv("SFTP_PW_ARC")
-        self.port = int(os.getenv("SFTP_PORT_ARC"))
+        self.port = os.getenv("SFTP_PORT_ARC")
         self.local_work_directory = "../fixtures"
         self.remote_work_out_directory = os.getenv("SFTP_OUT_PATH_ARC")
         self.remote_work_in_directory = os.getenv("SFTP_IN_PATH_ARC")
