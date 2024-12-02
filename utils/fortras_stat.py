@@ -111,7 +111,7 @@ class MensajeEstado:
 
 
     @staticmethod
-    def leer_stat_arcese(self, fichero):
+    def leer_stat_arcese(fichero):
 
         resultado = []
         icab = -1
@@ -185,7 +185,8 @@ class MensajeEstado:
             "COR": "ANXE05", 
             "CRI": "ANXE07", 
             "302": "ANXE11", 
-            
+            "VIA": "TRA0106",
+            "VSC": "ANXE06", # SHIPMENT UNLOADED
             # "DESCARFAL": ("SMA", "Missing inbound"),
             # "DESCARFTOT": ("SMA", "Missing inbound"),
             # "DESCARKO": ("SMA", "Missing inbound"),
@@ -201,7 +202,7 @@ class MensajeEstado:
         }
         
         if estado in conversion_dict:
-            return conversion_dict["estado"]
+            return conversion_dict[estado]
         else:
             return "error"
     

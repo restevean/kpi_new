@@ -1,3 +1,5 @@
+# utils/bmaster_api.py
+
 import requests
 from requests.exceptions import HTTPError
 import logging
@@ -10,8 +12,8 @@ from utils.safe_get_token import safe_get_token
 load_dotenv(dotenv_path='../conf/.env.base')
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
-load_dotenv(dotenv_path=f'../conf/.env.{INTEGRATION_CUST}{ENTORNO}')
 BM_API_URL = os.getenv("BM_API_URL")
+load_dotenv(dotenv_path=f'../conf/.env.{INTEGRATION_CUST}{ENTORNO}')
 BM_API_AUTH_URL = os.getenv("BM_API_AUTH_URL")
 USER_ANE_TEST = os.getenv("USER_ANE_TEST")
 PW_ANE_TEST = os.getenv("PW_ANE_TEST")
@@ -259,6 +261,7 @@ class BmasterApi:
             resp_dic["contenido"] = peticion.json()
             return resp_dic
 
+
     def n_consulta(self, query: str) -> Dict[str, Any]:
         url = f"{self.url}Consulta"
         resp_dic: Dict[str, Any] = {}
@@ -304,6 +307,7 @@ class BmasterApi:
             resp_dic["status_code"] = None
             resp_dic["contenido"] = [{"error": "Error inesperado"}]
             return resp_dic
+
 
     def peticion_post(self,url, _json):
         resp_dic = {}
