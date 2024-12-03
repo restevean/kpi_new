@@ -3,7 +3,8 @@ import json
 
 
 def safe_get_token(context: str = None) -> str:
-    lambda_client = boto3.client('lambda')
+    lambda_client = boto3.client('lambda', region_name='us-east-1')
+    # lambda_client = boto3.client('lambda')
 
     payload = {"token_type": context} if context else {}
 

@@ -3,6 +3,13 @@
 # Usa Python 3.12 como imagen base
 FROM python:3.12-slim
 
+# Crear el directorio /home/root/.aws
+RUN mkdir -p /root/.aws
+
+# Copiar el archivo credentials desde .aws/credentials en la raíz del proyecto
+COPY .aws/credentials /root/.aws/credentials
+COPY .aws/config /root/.aws/config
+
 # Instala dependencias del sistema necesarias
 RUN apt-get update && apt-get install -y \
     build-essential \

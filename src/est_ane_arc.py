@@ -10,6 +10,7 @@ from utils.misc import n_ref
 import pandas as pd
 import logging
 from datetime import datetime
+from pathlib import Path
 import paramiko
 
 
@@ -178,7 +179,8 @@ class EstadoAneArc:
 
     def write_txt_file(self, cpda, content):
         filename = f"ESITI_ANEXA_{datetime.now().strftime('%Y%m%d%H%M')}_{cpda}.txt"
-        local_file_path = os.path.join(self.local_work_directory, filename)
+        local_file_path = Path(self.local_work_directory) / filename
+        # local_file_path = os.path.join(self.local_work_directory, filename)
         with open(local_file_path, 'w') as f:
             f.write(content)
         return local_file_path  # Devolver la ruta completa del archivo creado
@@ -257,14 +259,23 @@ class EstadoAneArc:
     def run(self):
         query_reply = self.bm.n_consulta(self.query_partidas)
         df = pd.DataFrame(query_reply['contenido'])
-        self.max_itrk = df['itrk'].max()
+        if 'itrk' in df.columns:
+            self.max_itrk = df['itrk'].max()
+        else:
+            # Manejar el caso donde 'itrk' no existe
+            self.max_itrk = None  # O cualquier valor predeterminado que tenga sentido para tu aplicación
+            logging.warning("La columna 'itrk' no se encontró en el DataFrame.")
+        # self.max_itrk = df['itrk'].max()
         df = df.fillna("")
         pd.options.display.float_format = '{:.0f}'.format
         logging.info(df.to_markdown(index=False))
         logging.info(self.max_itrk)
-        self.process_query_response(query_reply)
-        # self.actualizar_comunicado()
-        second_query_reply = self.bm.n_consulta(self.query_repesca)
+        if self.max_itrk is not None:
+            self.process_query_response(query_reply)
+            # self.actualizar_comunicado()
+            second_query_reply = self.bm.n_consulta(self.query_repesca)
+
+
         df = pd.DataFrame(second_query_reply['contenido'])
         logging.info(df.to_markdown(index=False))
         logging.info(df.to_markdown(index=False))
