@@ -9,6 +9,8 @@ from utils.sftp_connect import SftpConnection as py_Sftp
 from utils.send_email import EmailSender
 from utils.send_email import EmailSender as email
 from datetime import datetime
+from pathlib import Path
+
 
 
 # Activamos logging
@@ -21,16 +23,18 @@ logger = logging.getLogger(__name__)
 
 load_dotenv(dotenv_path="../conf/.env.base")
 ENTORNO = os.getenv("ENTORNO")
+EMAIL_OURS = os.getenv("EMAIL_OURS")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
 load_dotenv(dotenv_path=f"../conf/.env.{INTEGRATION_CUST}")
-EMAIL_TO = os.getenv("EMAIL_TO")
+EMAIL_TO = os.getenv("EMAIL_TO_ARC")
 
 class EstadoCorresponsalAnexa:
     def __init__(self):
         self.entorno = ENTORNO
         self.email_from = "Estado Arcese Anexa"
-        self.email_to = [EMAIL_TO, "restevean@gmail.com"] if (self.entorno == "prod"
-                                                              and EMAIL_TO) else ["restevean@gmail.com"]
+        # TODO gestiuonar varios correos en .env
+        self.email_to = [EMAIL_TO, EMAIL_OURS] if (self.entorno == "pro"
+                                                              and EMAIL_TO) else [EMAIL_OURS]
         self.email_subject = "Anexa estado"
         self.email_body = None
         self.host = os.getenv("SFTP_SERVER_ARC")
@@ -38,7 +42,9 @@ class EstadoCorresponsalAnexa:
         self.password = os.getenv("SFTP_PW_ARC")
         self.port = int(os.getenv("SFTP_PORT_ARC"))
         # TODO enclose this path in .env files
-        self.local_work_directory = "../fixtures"
+        # self.local_work_directory = "../fixtures/"
+        self.base_path = Path(__file__).resolve().parent
+        self.local_work_directory = self.base_path.parent / "fixtures"
         self.remote_work_out_directory = os.getenv("SFTP_OUT_PATH_ARC")
         self.bm = BmApi()
 
@@ -58,15 +64,16 @@ class EstadoCorresponsalAnexa:
             mensaje = ""
             enviar_email=True
 
-            ruta_descarga = self.local_work_directory+fichero
+            ruta_descarga = self.local_work_directory / fichero
             stat = Fot()
             # n_sftp.sftp.download(remote_path=self.sftp_remote_dir+"/"+fichero, target_local_path=ruta_descarga)
-            n_sftp.sftp.get(fichero, self.local_work_directory+fichero)
+            n_sftp.sftp.get(fichero, self.local_work_directory / fichero)
             estados = stat.leer_stat_arcese(fichero=ruta_descarga)
 
             for est in estados:
                 est_anexa = stat.conversion_stat_arcese_anexa(est.get("EventCode").strip())
                 cpda = est.get('Customer Reference').strip()
+                logging.info(cpda)
                 fecha = datetime.now()
                 subir_hito = False #lo uso para controlar si lo subimso o enviamos un mensaje de error según vamos
                 # haciendo validaciones
@@ -87,12 +94,14 @@ class EstadoCorresponsalAnexa:
                     if subir_hito:
                         resp_partida = self.bm.n_consulta(query=f"select ipda, ientcor from trapda where cpda='{cpda}'")
                         if len(resp_partida.get("contenido"))>0:
+
+                            # Si encuentra esos ientcor
                             if resp_partida["contenido"][0]["ientcor"] in [89322,96202,77904,84019,84054,88931,
                                                                            185744,244692,244788,244799,246489,251061,
-                                                                           251265,252995,252997]:
+                                                                           251265,252995,252997,253462]:
                                 # Comprobamos que el corresponsal es Arcese ... si no, por error, podría otro
                                 # corresponsal por la TEP o referir a otro corresposnal. No todas las TEP son correctas
-                                fecha = datetime.strptime(est.get("Event Date").strp() + est.get("Event Time").strp(),
+                                fecha = datetime.strptime(est.get("Event Date").strip() + est.get("Event Time").strip(),
                                                           "%Y%m%d%H%M")
                                 hito_json ={
                                     "codigohito": est_anexa,
@@ -100,18 +109,36 @@ class EstadoCorresponsalAnexa:
                                     "fechatracking": fecha.strftime("%Y-%m-%dT%H:%M:00.000Z")  #"2024-11-30T12:43:55.101Z"
                                 }
 
-                                resp_hito = BmApi.post_partida_tracking(ipda=resp_partida["contenido"][0]["ipda"],
+                                # Marcamos el hito
+                                resp_hito = self.bm.post_partida_tracking(ipda=resp_partida["contenido"][0]["ipda"],
                                                                         data_json=hito_json)
-                                if resp_hito.get("cod_error")==201:
+                                if resp_hito.get("status_code")==201:
                                     mensaje+=(f"Hito {est_anexa} -- {est.get("Event Description").strip()} "
                                               f"para la partida {cpda} subido.\n")
+                                    # Mover fichero
+                                    os.rename(self.local_work_directory / fichero,
+                                              self.local_work_directory / "arc" / "edi" / "processed" / fichero)
+                                # Si el status code no es 201
+                                else:
+                                    mensaje += (f"Error al marcacar el hito {est_anexa} -- "
+                                                f"{est.get("Event Description").strip()} para la partida {cpda}")
+
+                                    # Mover fichero
+                                    os.rename(self.local_work_directory / fichero,
+                                              self.local_work_directory / "arc" / "edi" /"error" / fichero)
+
+                            # Si no ha encontrado el ientcor
                             else:
                                 mensaje+= (f"La partida {cpda} no corresponde a Arcese con el ientcor "
                                            f"{str(resp_partida["contenido"][0]["ientcor"])}")
+                                os.rename(self.local_work_directory / fichero,
+                                          self.local_work_directory / "arc" / "edi" /"error" / fichero)
                         else:
                             mensaje += f"\n Estado Arcese para la partida {cpda} que no está en BM."
+                            os.rename(self.local_work_directory / fichero,
+                                      self.local_work_directory / "arc" / "edi" /"error" / fichero)
             if enviar_email:
-                # email_sender.send_email(self.email_from, self.email_to, self.email_subject, mensaje)
+                email_sender.send_email(self.email_from, self.email_to, self.email_subject, mensaje)
                 logging.info("enviamos email")
                 # print("enviamos email")
 

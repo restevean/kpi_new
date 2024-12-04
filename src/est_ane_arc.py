@@ -12,10 +12,12 @@ import logging
 from datetime import datetime
 from pathlib import Path
 import paramiko
+from pathlib import Path
 
 
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+# sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
+script_dir = Path(__file__).resolve().parent
 
 # Activamos logging
 logging.basicConfig(
@@ -38,7 +40,8 @@ class EstadoAneArc:
         self.username = os.getenv("SFTP_USER_ARC")
         self.password = os.getenv("SFTP_PW_ARC")
         self.port = os.getenv("SFTP_PORT_ARC")
-        self.local_work_directory = "../fixtures"
+        # self.local_work_directory = "../fixtures"
+        self.local_work_directory = script_dir.parent / 'fixtures'
         self.remote_work_out_directory = os.getenv("SFTP_OUT_PATH_ARC")
         self.remote_work_in_directory = os.getenv("SFTP_IN_PATH_ARC")
         self.partidas = None
@@ -76,7 +79,7 @@ class EstadoAneArc:
             AND trapda.ientcor IN (244692,252997,244799,77904,246489,251061,185744,244788,255503,252995,253463,253462,77957,253464,244152,89322,96202,94544)
             AND trapda.cpda LIKE 'TIP%'
             AND (maxitrk < itrk OR maxitrk IS NULL)
-            AND YEAR(fhit) * 100 + MONTH(fhit) > 202409
+            AND YEAR(fhit) * 100 + MONTH(fhit) > 202411
         ORDER BY 
             ipda, itrk ASC;
         """
@@ -183,7 +186,7 @@ class EstadoAneArc:
         # local_file_path = os.path.join(self.local_work_directory, filename)
         with open(local_file_path, 'w') as f:
             f.write(content)
-        return local_file_path  # Devolver la ruta completa del archivo creado
+        return {"path":local_file_path, "file_name": filename}  # Devolver la ruta completa del archivo creado
 
     def process_query_response(self, query_reply):
         self.partidas = {}
@@ -215,13 +218,14 @@ class EstadoAneArc:
 
     def upload_file(self, local_file_path):
         remote_directory = self.remote_work_in_directory
-        remote_file_path = f"{remote_directory}/{os.path.basename(local_file_path)}"
+        # remote_file_path = f"{remote_directory}/{os.path.basename(local_file_path)}"
+        remote_file_path = f"{self.remote_work_in_directory}{local_file_path["file_name"]}"
         try:
-            transport = paramiko.Transport((self.host, self.port))
+            transport = paramiko.Transport((self.host, int(self.port)))
             transport.connect(username=self.username, password=self.password)
             sftp = paramiko.SFTPClient.from_transport(transport)
-            logging.info(f"Successfuly connected to {self.host}:{self.port}")
-            sftp.put(local_file_path, remote_file_path)
+            logging.info(f"Successfuly connected to {self.host}:{str(self.port)}")
+            sftp.put(local_file_path["path"], remote_file_path)
             sftp.close()
             transport.close()
             logging.info("Connection closed")
@@ -272,7 +276,7 @@ class EstadoAneArc:
         logging.info(self.max_itrk)
         if self.max_itrk is not None:
             self.process_query_response(query_reply)
-            # self.actualizar_comunicado()
+            self.actualizar_comunicado()
             second_query_reply = self.bm.n_consulta(self.query_repesca)
 
 

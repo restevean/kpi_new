@@ -5,6 +5,7 @@ from utils.bmaster_api import BmasterApi as BmApi
 from datetime import datetime, timezone
 from utils.send_email import EmailSender
 from utils.sftp_connect import SftpConnection
+from pathlib import Path
 
 
 load_dotenv(dotenv_path="../conf/.env.base")
@@ -23,6 +24,9 @@ SFTP_STAT_OUT_DIR = os.getenv("SFTP_STAT_OUT_DIR")
 SFTP_DEV_STAT_OUT_DIR = os.getenv("SFTP_DEV_STAT_OUT_DIR")
 
 
+script_dir = Path(__file__).resolve().parent
+
+
 class EstadoGruAne:
 
     def __init__(self):
@@ -31,7 +35,10 @@ class EstadoGruAne:
         self.username = SFTP_USER
         self.password = SFTP_PW
         self.port = int(SFTP_PORT)
-        self.local_work_directory = "../fixtures"
+        # self.local_work_directory = "../fixtures"
+        self.local_base_dir = Path(__file__).resolve().parent
+        # self.local_work_directory = script_dir.parent / 'fixtures'
+        self.local_work_directory = self.local_base_dir.parent / 'fixtures'
         self.remote_work_out_directory = SFTP_STAT_OUT_DIR if self.entorno == "prod" else SFTP_DEV_STAT_OUT_DIR
         self.remote_work_in_directory = SFTP_STAT_IN_DIR if self.entorno == "prod" else SFTP_DEV_STAT_IN_DIR
         self.download_files()
@@ -162,6 +169,8 @@ class EstadoGruAne:
             remote_path = f"{remote_dir}/{file_name}"
             n_sftp.sftp.put(local_path, remote_path)
             n_sftp.sftp.remove(f"{self.remote_work_out_directory}/{file_name}")
+
+            # target_dir = os.path.join(self.local_work_directory, "success" if file_attrs["success"] else "fail")
             target_dir = os.path.join(self.local_work_directory, "success" if file_attrs["success"] else "fail")
             os.makedirs(target_dir, exist_ok=True)  # Crea el directorio si no existe
             os.rename(local_path, os.path.join(target_dir, file_name))
