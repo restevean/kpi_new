@@ -280,10 +280,3 @@ class MensajeEstado:
                             }
                         )
         return resultado
-
-
-
-
-
-
-

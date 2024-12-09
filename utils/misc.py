@@ -2,7 +2,13 @@
 
 from datetime import datetime, time
 from typing import Optional
+from charset_normalizer import from_path
+from pathlib import Path
 
+
+# Empezamos con pathlib y obtenemos el path
+utils_dir = Path(__file__).resolve().parent
+file_dir = utils_dir.parent / "fixtures" / "xbs" / "edi"
 
 """
 Funciones auxiliares
@@ -36,3 +42,16 @@ def n_ref(trip_ref='', mode=""): # "r" de reverse
             return f"{trip_[6:]}/{trip_[:4]}/{trip_[4:6]}"
     return " " * 10
 
+
+def comprobar_codificacion(filepath):
+    resultado = from_path(filepath).best()
+    return resultado.encoding, resultado
+
+
+if __name__ == "__main__":
+
+    codificacion, detalle = comprobar_codificacion(file_dir / "ExampleEDI.txt")
+    if codificacion == 'utf_8':
+        print(f"El archivo {file_dir / "ExampleEDI.txt"} está codificado en UTF-8.")
+    else:
+        print(f"El archivo {file_dir / "ExampleEDI.txt"} no está en UTF-8, está en {codificacion}.")
