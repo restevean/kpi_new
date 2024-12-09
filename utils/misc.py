@@ -23,8 +23,10 @@ def date_yyyy_mm_dd(fecha: str = "", hora: Optional[str] = None) -> str:
     fecha_completa = datetime.combine(fecha_dt.date(), hora_dt)
     return fecha_completa.strftime("%Y-%m-%dT%H:%M:%S")
 
-def n_ref(trip_ref='', mode="r"): # "r" de reverse
-    # 2024MO12103  --> 12103/2024/MO
+
+def n_ref(trip_ref='', mode=""): # "r" de reverse
+    # Mode == "r" 12103/2024/MO  --> 2024MO12103
+    # With no mode 2024MO12103  --> 12103/2024/MO
     if trip_ref:
         trip_=trip_ref.strip() # 2024MO12103
         if mode == "r":

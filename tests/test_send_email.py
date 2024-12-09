@@ -1,3 +1,5 @@
+# tests/test_send_email.py
+
 import os
 import pytest
 from unittest.mock import patch, MagicMock

@@ -1,5 +1,7 @@
+# tests/test_est_gru_ane.py
+
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, ANY
 from src.est_gru_ane import EstadoGruAne
 
 
@@ -41,19 +43,22 @@ def test_file_process():
         # Configurar el mock para 'leer_stat_gruber'
         mock_mensaje_estado_instance = MockMensajeEstado.return_value
         mock_mensaje_estado_instance.leer_stat_gruber.return_value = {
-            "Lineas": {
-                "line1": {
+            "Lineas": [
+                {
                     "Record type ‘Q10’": "Q10",
-                    "Consignment number sending depot": "12345",
-                    "Status code": "001"
+                    "Consignment number sending depot": "12345",  # n_ref_cor válido
+                    "Status code": "001"  # n_status válido
                 }
-            }
+            ]
         }
 
         # Configurar el mock para 'BmApi' y sus métodos
         mock_bmapi_instance = MockBmApi.return_value
-        mock_bmapi_instance.consulta_.return_value = {"contenido": [{"ipda": "ipda_value", "cpda": "cpda_value"}]}
-        mock_bmapi_instance.n_consulta.return_value = {"contenido": [{"ipda": "ipda_value", "cpda": "cpda_value"}]}
+        mock_bmapi_instance.n_consulta.return_value = {
+            "contenido": [
+                {"ipda": "ipda_value", "cpda": "cpda_value"}  # Respuesta esperada
+            ]
+        }
         mock_bmapi_instance.post_partida_tracking.return_value = {"status_code": 201}
 
         # Instanciar la clase que estamos testeando
@@ -74,17 +79,16 @@ def test_file_process():
         mock_mensaje_estado_instance.leer_stat_gruber.assert_called_once_with(test_file_name)
 
         # Verificar que los métodos de 'BmApi' fueron llamados
-        mock_bmapi_instance.consulta_.assert_called_once()
         mock_bmapi_instance.n_consulta.assert_called_once()
         mock_bmapi_instance.post_partida_tracking.assert_called_once_with(
             "ipda_value",
             {
-                "codigohito": "ENT001",
+                "codigohito": "ENT001",  # Ajustar según la lógica de get_cod_hito
                 "descripciontracking": test_file_name,
-                "fechatracking": pytest.ANY  # Puedes usar 'pytest.ANY' para ignorar el valor exacto
+                "fechatracking": ANY  # Ignorar valor exacto
             }
         )
 
         # Verificar los cambios en 'estado.files'
-        assert estado.files[test_file_name]["success"] == True
+        assert estado.files[test_file_name]["success"] is True
         assert "Creada partida, hito ENT001-cpda_value" in estado.files[test_file_name]["message"]

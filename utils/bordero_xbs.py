@@ -9,18 +9,18 @@ class BorderoXBS:
     def __init__(self):
         self.bordero = {"partidas": []}
         self.a00 = {}
-        self.linea = {}
+        self.line = {}
 
     def registro_a00(self, fila=""):
         reg_a00 = {
-            "record_type": fila[0:2],
+            "record_type_a00": fila[0:3],
             "data_type_qualifier": fila[4:6],
             "release_version": fila[7:9],
             "waybill_number": fila[10:44],
             "waybill_date": fila[45:52],
             "transport_type": fila[53:55],
             "product": fila[56:58],
-            "code_list": fila[59:61],
+            "code_list_(cooperation)": fila[59:61],
             "currency": fila[62:64],
             "identification_of_waybill_consignor": fila[65:99],
             "identification_of_waybill_consignee": fila[100:134],
@@ -32,14 +32,15 @@ class BorderoXBS:
             "vehicle_license_number_2": fila[252:286],
             "routing_id_1": fila[287:321],
             "routing_id_2": fila[322:356],
-
+            "lines": []
         }
         self.bordero["partidas"].append(reg_a00)
         self.a00 = reg_a00
         return reg_a00
 
     def expediente_ref_cor (self):
-        return self.cabecera[" waybill_number g add ---¿?--- "].strip()
+        return self.cabecera["waybill_number"].strip()
 
+    # TODO Ojo! cuál es nrefcor? expediente_ref_cor o partida_ref_cor
     def partida_ref_cor(self):
         return self.cabecera[' ---¿?--- '].strip

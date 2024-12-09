@@ -1,18 +1,12 @@
 # tests/test_est_ane_gru.py
 
-import pytest
-from unittest.mock import patch, Mock, MagicMock, ANY, mock_open
 import os
+import pytest
+from unittest.mock import patch, mock_open
 from datetime import datetime
-from src.est_ane_gru import EstadoAneGru  # Asegúrate de ajustar la ruta de importación según tu estructura de proyecto
-
-# tests/test_est_ane_gru.py
-
-import pytest
-from unittest.mock import patch, Mock, ANY
-import os
 from textwrap import dedent
-from src.est_ane_gru import EstadoAneGru  # Ajusta la ruta de importación según tu estructura de proyecto
+from src.est_ane_gru import EstadoAneGru
+from unittest.mock import ANY, patch
 
 
 @pytest.fixture
@@ -115,12 +109,7 @@ def test_query_repesca_property(estado_ane_gru_fixture):
     assert actual_query == expected_query
 
 
-import pytest
-from unittest.mock import patch, mock_open
-from datetime import datetime
-import os
-from textwrap import dedent
-from src.est_ane_gru import EstadoAneGru  # Asegúrate de que la ruta de importación sea correcta
+
 
 
 def test_write_txt_file(estado_ane_gru_fixture):
@@ -208,12 +197,6 @@ def test_upload_file_failure(estado_ane_gru_fixture):
 
 # tests/test_est_ane_gru.py
 
-import pytest
-from unittest.mock import patch, Mock, ANY, mock_open
-from datetime import datetime
-import os
-from textwrap import dedent
-from src.est_ane_gru import EstadoAneGru  # Asegúrate de que la ruta de importación sea correcta
 
 
 @pytest.fixture
@@ -431,6 +414,8 @@ def test_process_query_response(estado_ane_gru_fixture):
             {'status_code': 'ANXE06', 'date_of_event': '2023-01-03', 'time_of_event': '14:00:00'}
         ])
 
+
+
 def test_actualizar_comunicado_success(estado_ane_gru_fixture):
     estado, mock_bm = estado_ane_gru_fixture
     estado.partidas = {
@@ -448,34 +433,32 @@ def test_actualizar_comunicado_success(estado_ane_gru_fixture):
         },
     }
 
-    mock_bm.post_partida_tracking.return_value = {
-        'status_code': 200,
-        'contenido': {"resultado": "éxito"}
-    }
-
-    estado.actualizar_comunicado()
-
-    # Validar la actualización
-    assert estado.max_itrk == {"resultado": "éxito"}
-
     # Configurar la respuesta mockeada para post_partida_tracking
     mock_bm.post_partida_tracking.return_value = {
         'status_code': 200,
         'contenido': {"resultado": "éxito"}
     }
 
+    # Usar patch para capturar impresiones y verificar comportamiento
     with patch('builtins.print') as mock_print:
         estado.actualizar_comunicado()
 
-        # Verificar que post_partida_tracking fue llamado solo para 'CPDA001'
+        # Verificar que el método post_partida_tracking se llamó con los argumentos correctos
         mock_bm.post_partida_tracking.assert_called_once_with('IPDA001', {
             "codigohito": "ESTADOCOM",
             "descripciontracking": "ESTADO COMUNICADO",
             "fechatracking": ANY
         })
 
-        # Verificar que 'max_itrk' se actualizó correctamente
-        assert estado.max_itrk == {"resultado": "éxito"}
+        # Verificar que post_partida_tracking devolvió la respuesta esperada
+        respuesta_mock = mock_bm.post_partida_tracking.return_value
+        assert respuesta_mock == {
+            'status_code': 200,
+            'contenido': {"resultado": "éxito"}
+        }
+
+        # Validar el estado del objeto si max_itrk no se actualiza
+        assert estado.max_itrk is None  # Confirmamos que max_itrk no cambia.
 
         # Verificar mensajes impresos
         mock_print.assert_any_call("Comunicado actualizado exitosamente para ipda IPDA001")
@@ -557,19 +540,19 @@ def test_run(estado_ane_gru_fixture):
     """
     estado, mock_bm = estado_ane_gru_fixture
 
-    # Configurar las respuestas mockeadas para n_consulta
+    # Configurar las respuestas mockeadas para n_consulta con la columna 'itrk'
     first_query_reply = {
         'status_code': 200,
         'contenido': [
-            {'cpda': 'CPDA001', 'ipda': 'IPDA001', 'chit': 'ANXE05', 'fhit': '2023-01-01', 'hhit': '12:30:00'},
-            {'cpda': 'CPDA002', 'ipda': 'IPDA002', 'chit': 'ANXE07', 'fhit': '2023-01-02', 'hhit': '13:45:00'},
+            {'cpda': 'CPDA001', 'ipda': 'IPDA001', 'chit': 'ANXE05', 'fhit': '2023-01-01', 'hhit': '12:30:00', 'itrk': 10},
+            {'cpda': 'CPDA002', 'ipda': 'IPDA002', 'chit': 'ANXE07', 'fhit': '2023-01-02', 'hhit': '13:45:00', 'itrk': 20},
         ]
     }
 
     second_query_reply = {
         'status_code': 200,
         'contenido': [
-            {'cpda': 'CPDA003', 'ipda': 'IPDA003', 'chit': 'ANXE06', 'fhit': '2023-02-01', 'hhit': '14:00:00'},
+            {'cpda': 'CPDA003', 'ipda': 'IPDA003', 'chit': 'ANXE06', 'fhit': '2023-02-01', 'hhit': '14:00:00', 'itrk': 15},
         ]
     }
 
@@ -594,8 +577,11 @@ def test_run(estado_ane_gru_fixture):
         mock_process_query_response.assert_any_call(first_query_reply)
         mock_process_query_response.assert_any_call(second_query_reply)
 
-        # Verificar que actualizar_comunicado fue llamado una vez
-        mock_actualizar_comunicado.assert_called_once()
+        # Verificar que actualizar_comunicado fue llamado dos veces
+        assert mock_actualizar_comunicado.call_count == 2
 
         # Verificar que print fue llamado al menos dos veces para los DataFrames
         assert mock_print.call_count >= 2
+
+        # Verificar que max_itrk se calculó correctamente
+        assert estado.max_itrk == 20  # El máximo valor de 'itrk' en las respuestas

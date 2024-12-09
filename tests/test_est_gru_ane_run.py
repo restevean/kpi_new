@@ -4,7 +4,6 @@ from src.est_gru_ane import EstadoGruAne
 import glob
 import tempfile
 
-
 @pytest.fixture
 def estado_gru_ane():
     """Fixture para inicializar una instancia de EstadoGruAne."""
