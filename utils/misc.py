@@ -48,10 +48,41 @@ def comprobar_codificacion(filepath):
     return resultado.encoding, resultado
 
 
+def convertir_a_utf8(ruta_entrada, ruta_salida):
+    # Detectar la codificación del archivo original
+    resultado = from_path(ruta_entrada).best()
+    if not resultado:
+        raise ValueError("No se pudo detectar la codificación del archivo.")
+
+    texto = str(resultado)  # Convertir el contenido a texto
+    encoding_original = resultado.encoding
+
+    # Guardar el archivo como UTF-8
+    with open(ruta_salida, 'w', encoding='utf-8') as archivo_salida:
+        archivo_salida.write(texto)
+
+    print(f"Archivo convertido de {encoding_original} a UTF-8 y guardado en {ruta_salida}.")
+
+
+# Ruta del archivo original y archivo convertido
+
+
+
 if __name__ == "__main__":
 
+    # Comprobar la codificación
     codificacion, detalle = comprobar_codificacion(file_dir / "ExampleEDI.txt")
     if codificacion == 'utf_8':
         print(f"El archivo {file_dir / "ExampleEDI.txt"} está codificado en UTF-8.")
     else:
         print(f"El archivo {file_dir / "ExampleEDI.txt"} no está en UTF-8, está en {codificacion}.")
+
+
+    # Convertirlo a UTF-8
+    ruta_entrada = file_dir / "ExampleEDI.txt"
+    ruta_salida = file_dir / "ExampleEDI_utf-8.txt"
+
+    try:
+        convertir_a_utf8(ruta_entrada, ruta_salida)
+    except Exception as e:
+        print(f"Error: {e}")
