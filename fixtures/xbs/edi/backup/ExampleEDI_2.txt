@@ -1,0 +1,10 @@
+@@PHBORD512 0512  86  1 9 XBSOPO ANEXAVAL                                                                                
+A00STD1001ES24E00040                        05042022L  CL CL EURXBSOPO                             ANEXAVAL                           FLS - FREIGHT & LOGISTICS SOLUTIONSPT 4450-214 MATOSINHOS                         VC-2365
+A101
+B00001SHPTEXMARTINS INDUSTRIA TEXTIL LDA    Rua Alberto Fernandes, 247/253     PT 4810-218 Mesão Frio
+B00001CONBP Outlet24                        Erbstollenstr. 33a                 DE 58454    Witten
+D000010010083KT 0000   TEXTEIS                                                               000611000000000000000000000000034860000000
+G000012008                               0006110002  N0000000000000000                                                                                                               00100000000000   00000000003486000000000   00    00000000
+J000010000830006110000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+Z0000000712042022094651
+@@PT

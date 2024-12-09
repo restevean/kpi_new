@@ -1,4 +1,5 @@
 # utils/bordero-py
+# TODO change name from bordero.py to bordero_arc.py
 
 import json
 import logging

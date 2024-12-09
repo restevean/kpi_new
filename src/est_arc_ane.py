@@ -7,11 +7,10 @@ from utils.fortras_stat import MensajeEstado as Fot
 from utils.bmaster_api import BmasterApi as BmApi
 from utils.sftp_connect import SftpConnection as py_Sftp
 from utils.send_email import EmailSender
-from utils.send_email import EmailSender as email
 from datetime import datetime
 from pathlib import Path
 
-
+# TODO To check path using pathlib
 
 # Activamos logging
 logging.basicConfig(
@@ -53,8 +52,6 @@ class EstadoCorresponsalAnexa:
         n_sftp= py_Sftp()
         n_sftp.connect(host=self.host, port=self.port, username=self.username,password=self.password)
         n_sftp.sftp.chdir(self.remote_work_out_directory)
-        # TODO Fix double instance to BmApi
-        # bm = BmApi()
 
         filtered_list_dir = [file for file in n_sftp.sftp.listdir() if "ESITI" in file]
         enviar_email = False
@@ -66,7 +63,6 @@ class EstadoCorresponsalAnexa:
 
             ruta_descarga = self.local_work_directory / fichero
             stat = Fot()
-            # n_sftp.sftp.download(remote_path=self.sftp_remote_dir+"/"+fichero, target_local_path=ruta_descarga)
             n_sftp.sftp.get(fichero, self.local_work_directory / fichero)
             estados = stat.leer_stat_arcese(fichero=ruta_descarga)
 
@@ -75,8 +71,8 @@ class EstadoCorresponsalAnexa:
                 cpda = est.get('Customer Reference').strip()
                 logging.info(cpda)
                 fecha = datetime.now()
-                subir_hito = False #lo uso para controlar si lo subimso o enviamos un mensaje de error según vamos
-                # haciendo validaciones
+                subir_hito = False  # lo uso para controlar si lo subimos o enviamos un mensaje de error según vamos
+                                    # haciendo validaciones
 
                 # Ponemos fecha al evento en caso de que no la tenga
                 if est.get("Event Date").strip() =="":
@@ -140,7 +136,6 @@ class EstadoCorresponsalAnexa:
             if enviar_email:
                 email_sender.send_email(self.email_from, self.email_to, self.email_subject, mensaje)
                 logging.info("enviamos email")
-                # print("enviamos email")
 
 
 if __name__ == '__main__':

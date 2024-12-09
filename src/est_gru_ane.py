@@ -1,3 +1,4 @@
+import logging
 import os
 from dotenv import load_dotenv
 from utils import fortras_stat as state
@@ -8,11 +9,25 @@ from utils.sftp_connect import SftpConnection
 from pathlib import Path
 
 
-load_dotenv(dotenv_path="../conf/.env.base")
+script_dir = Path(__file__).resolve().parent
+
+# Activamos logging
+logging.basicConfig(
+    level=logging.INFO,     # Nivel mínimo de mensajes a mostrar
+    format='%(message)s',   # Formato del mensaje
+    # format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Formato del mensaje
+)
+logger = logging.getLogger(__name__)
+
+
+# TODO Optimizar la carga de variables de entorno en la inicialización del objeto
+load_dotenv(dotenv_path=script_dir.parent / "conf" / ".env.base")
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
-load_dotenv(dotenv_path=f"../conf/.env.{INTEGRATION_CUST}{ENTORNO}")
-print(f"../conf/.env.{INTEGRATION_CUST}{ENTORNO}")
+
+load_dotenv(dotenv_path=script_dir.parent / "conf" / f".env.{INTEGRATION_CUST}{ENTORNO}")
+dotenvpath=dotenv_path=script_dir.parent / "conf" / f".env.{INTEGRATION_CUST}{ENTORNO}"
+logging.info(dotenvpath)
 EMAIL_TO = os.getenv("EMAIL_TO")
 SFTP_SERVER = os.getenv("SFTP_SERVER")
 SFTP_USER = os.getenv("SFTP_USER")
@@ -24,9 +39,6 @@ SFTP_STAT_OUT_DIR = os.getenv("SFTP_STAT_OUT_DIR")
 SFTP_DEV_STAT_OUT_DIR = os.getenv("SFTP_DEV_STAT_OUT_DIR")
 
 
-script_dir = Path(__file__).resolve().parent
-
-
 class EstadoGruAne:
 
     def __init__(self):
@@ -35,9 +47,7 @@ class EstadoGruAne:
         self.username = SFTP_USER
         self.password = SFTP_PW
         self.port = int(SFTP_PORT)
-        # self.local_work_directory = "../fixtures"
-        self.local_base_dir = Path(__file__).resolve().parent
-        # self.local_work_directory = script_dir.parent / 'fixtures'
+        self.local_base_dir = script_dir
         self.local_work_directory = self.local_base_dir.parent / 'fixtures'
         self.remote_work_out_directory = SFTP_STAT_OUT_DIR if self.entorno == "prod" else SFTP_DEV_STAT_OUT_DIR
         self.remote_work_in_directory = SFTP_STAT_IN_DIR if self.entorno == "prod" else SFTP_DEV_STAT_IN_DIR
@@ -75,7 +85,6 @@ class EstadoGruAne:
                 n_sftp.sftp.get(file, local_path)
         n_sftp.disconnect()
 
-    # TODO Update conversion dictionary. There are missing items
     @staticmethod
     def get_cod_hito(status):
         status_map = {

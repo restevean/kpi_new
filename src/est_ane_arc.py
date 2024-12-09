@@ -17,7 +17,7 @@ from pathlib import Path
 
 # sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-script_dir = Path(__file__).resolve().parent
+# script_dir = Path(__file__).resolve().parent
 
 # Activamos logging
 logging.basicConfig(
@@ -40,8 +40,9 @@ class EstadoAneArc:
         self.username = os.getenv("SFTP_USER_ARC")
         self.password = os.getenv("SFTP_PW_ARC")
         self.port = os.getenv("SFTP_PORT_ARC")
+        self.base_path = Path(__file__).resolve().parent
         # self.local_work_directory = "../fixtures"
-        self.local_work_directory = script_dir.parent / 'fixtures'
+        self.local_work_directory = self.base_path.parent / 'fixtures'
         self.remote_work_out_directory = os.getenv("SFTP_OUT_PATH_ARC")
         self.remote_work_in_directory = os.getenv("SFTP_IN_PATH_ARC")
         self.partidas = None
@@ -73,9 +74,9 @@ class EstadoAneArc:
                 creg
         ) max_itrk ON max_itrk.creg = aebtrk.creg
         WHERE 
-            aebtrk.ihit IN (541, 542, 543, 0, 544, 562, 630, 631, 632, 633, 635, 
-                            513, 526, 527, 530, 568, 632, 633, 635, 636, 546, 547, 
-                            511, 469, 302, 507, 512, 493, 508, 523, 524)
+            aebtrk.ihit IN (541, 542, 543, 544, 562, 630, 631, 632, 633, 635,
+                            513, 526, 527, 530, 568, 632, 633, 635, 636, 546, 547,
+                            511, 469, 302, 507, 512, 508, 523, 524)
             AND trapda.ientcor IN (244692,252997,244799,77904,246489,251061,185744,244788,255503,252995,253463,253462,77957,253464,244152,89322,96202,94544)
             AND trapda.cpda LIKE 'TIP%'
             AND (maxitrk < itrk OR maxitrk IS NULL)
@@ -132,9 +133,9 @@ class EstadoAneArc:
                     aebhit
                     ON aebhit.ihit = aebtrk.ihit
                 WHERE
-                    aebtrk.ihit IN (
-                        0, 302, 469, 493, 507, 508, 511, 512, 513, 523, 524, 526, 527, 530, 541,
-                        542, 543, 544, 546, 547, 562, 568, 630, 631, 632, 633, 635, 636
+                    aebtrk.ihit IN ( 541, 542, 543, 544, 562, 630, 631, 632, 633, 635,
+                            513, 526, 527, 530, 568, 632, 633, 635, 636, 546, 547,
+                            511, 469, 302, 507, 512, 508, 523, 524
                     )
                     AND trapda.ientcor IN (244692,252997,244799,77904,246489,251061,185744,244788,255503,252995,253463,253462,77957,253464,244152,89322,96202,94544)
                     AND trapda.cpda LIKE 'TIP%'
@@ -269,7 +270,7 @@ class EstadoAneArc:
             # Manejar el caso donde 'itrk' no existe
             self.max_itrk = None  # O cualquier valor predeterminado que tenga sentido para tu aplicación
             logging.warning("La columna 'itrk' no se encontró en el DataFrame.")
-        # self.max_itrk = df['itrk'].max()
+
         df = df.fillna("")
         pd.options.display.float_format = '{:.0f}'.format
         logging.info(df.to_markdown(index=False))
@@ -277,16 +278,15 @@ class EstadoAneArc:
         if self.max_itrk is not None:
             self.process_query_response(query_reply)
             self.actualizar_comunicado()
+
+            # Repesca solo si self.max_itrk es distinito de None
             second_query_reply = self.bm.n_consulta(self.query_repesca)
-
-
-        df = pd.DataFrame(second_query_reply['contenido'])
-        logging.info(df.to_markdown(index=False))
-        logging.info(df.to_markdown(index=False))
-        if second_query_reply.get("contenido"):
-            self.partidas = None
-            self.process_query_response(second_query_reply)
-            # self.actualizar_comunicado()
+            if second_query_reply.get("contenido") != []:
+                df = pd.DataFrame(second_query_reply['contenido'])
+                logging.info(df.to_markdown(index=False))
+                self.partidas = None
+                self.process_query_response(second_query_reply)
+                self.actualizar_comunicado()
 
 
 if __name__ == "__main__":
