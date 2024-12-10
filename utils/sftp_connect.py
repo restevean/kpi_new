@@ -1,12 +1,16 @@
+# utils/sftp_connect.py
+
 import os
 import paramiko
 from dotenv import load_dotenv
+from pathlib import Path
 
 
-load_dotenv(dotenv_path="../conf/..env.base")
+base_dir = Path(__file__).resolve().parent
+load_dotenv(dotenv_path=base_dir.parent / "conf" / ".env.base")
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
-load_dotenv(dotenv_path=f"../conf/.env.{INTEGRATION_CUST}{ENTORNO}")
+load_dotenv(dotenv_path=base_dir.parent / "conf" / f".env.{INTEGRATION_CUST}{ENTORNO}")
 SFTP_SERVER = os.getenv("SFTP_SERVER")
 SFTP_USER = os.getenv("SFTP_USER")
 SFTP_PW = os.getenv("SFTP_PW")
