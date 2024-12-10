@@ -11,8 +11,8 @@ from utils.misc import n_ref
 from utils.buscar_empresa import busca_destinatario
 from utils.send_email import EmailSender
 from pathlib import Path
-
 # import psycopg2
+
 
 # Activamos logging
 logging.basicConfig(
@@ -20,23 +20,16 @@ logging.basicConfig(
     # format='%(message)s',   # Formato del mensaje
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Formato del mensaje
 )
-
 logger = logging.getLogger(__name__)
 
+# Gestionamos adecuadamente los path
 base_dir = Path(__file__).resolve().parent
 
 load_dotenv(dotenv_path=base_dir.parent / "conf" / ".env.base")
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
-
-if ENTORNO == "pro":
-    # load_dotenv(dotenv_path=f"../conf/.env.{INTEGRATION_CUST}{ENTORNO}")
-    load_dotenv(dotenv_path=base_dir.parent / "conf" / f".env.{INTEGRATION_CUST}{ENTORNO}")
-    logger.info(f"Cargando configuración: {INTEGRATION_CUST}{ENTORNO}")
-else:
-    # load_dotenv(dotenv_path=f"../conf/.env.{INTEGRATION_CUST}dev")
-    load_dotenv(dotenv_path=base_dir.parent / "conf" / f".env.{INTEGRATION_CUST}{ENTORNO}")
-    logger.info(f"Cargando configuración: {INTEGRATION_CUST}{ENTORNO}")
+load_dotenv(dotenv_path=base_dir.parent / "conf" / f".env.{INTEGRATION_CUST}{ENTORNO}")
+logger.info(f"Cargando configuración: {INTEGRATION_CUST}{ENTORNO}")
 
 
 class PartidaArcAne:
