@@ -198,11 +198,13 @@ class PartidaArcAne:
 
     def download_files(self):
 
-        n_sftp = SftpConnection()
+        # n_sftp = SftpConnection()
+        n_sftp = SftpConnection(self.sftp_url, self.sftp_user, self.sftp_pw, self.sftp_port)
+
 
         try:
             logger.debug(" --- Estableciendo conexión SFTP...")
-            n_sftp.connect(self.sftp_url, self.sftp_port, self.sftp_user, self.sftp_pw)
+            n_sftp.connect()
             logger.debug(" --- Conexión SFTP establecida correctamente.")
 
             if not os.path.exists(self.local_work_directory):
@@ -414,46 +416,24 @@ class PartidaArcAne:
     def run(self):
 
         # Nos ocupamos primero de los descargados antes y sin iexp/cexp
-        logger.info("\nIniciando proceso de archivos que estaban pendientes de procesar")
+        logger.info(" --- Iniciando proceso de archivos que estaban pendientes de procesar")
         pda_arc = PartidaArcAne()
         pda_arc.files = self.load_dir_files(self.local_work_pof_process)
         if pda_arc.files:
             pda_arc.files_process(self.local_work_pof_process)
-            logging.info("Procesados los archivos que estaban pendientes de procesar")
+            logging.info(" --- Procesados los archivos que estaban pendientes de procesar")
 
         # Procesamos los recién descargados del FTP
-        logger.info("\nIniciando proceso de archivos descargados")
-        logger.info("Descargando nuevos archivos")
+        logger.info(" --- Iniciando proceso de archivos descargados")
+        logger.info(" --- Descargando nuevos archivos")
         pda_arc.download_files()
         # pda_arc.files = None
         pda_arc.files = self.load_dir_files()
         if pda_arc.files:
             pda_arc.files_process(self.local_work_directory)
-            logging.info("Procesados los archivos descargados de FTP")
+            logging.info(" --- Procesados los archivos descargados de FTP")
 
 
 if __name__ == "__main__":
     partida = PartidaArcAne()
     partida.run()
-
-
-
-
-
-
-
-
-
-"""
-x 1.- Revisamos la carpeta temporal "process_pending"
-x 2.- Procesamos los archivos que contiene:
-    Si hay archivos
-        Comprobamos si tienen nrefcor asignado:
-            En caso de que si: procesamos archivo, enchufamos las partidas
-            En caso de que no: no hacemos nada
-x 3.- Descargamos los archivos del FTP
-x 4.- Procesamos los archivos descargados
-        Comprobamos si tienen nrefcor asignado:
-            En caso de que si: enchufamos partidas
-            En caso de que no: los movemos a la carpeta "pending_of_process"
-"""

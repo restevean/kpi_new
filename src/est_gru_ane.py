@@ -71,7 +71,8 @@ class EstadoGruAne:
 
 
     def download_files(self):
-        n_sftp = SftpConnection()
+        # n_sftp = SftpConnection()
+        n_sftp = SftpConnection(self.host, self.username, self.password, self.port)
         n_sftp.connect()
 
         if not os.path.exists(self.local_work_directory):
@@ -164,7 +165,8 @@ class EstadoGruAne:
 
     def run(self):
         email_sender = EmailSender()
-        n_sftp = SftpConnection()
+        # n_sftp = SftpConnection()
+        n_sftp = SftpConnection(self.host, self.username, self.password, self.port)
         n_sftp.connect()
 
         for file_name, file_attrs in self.files.items():

@@ -10,13 +10,12 @@ from utils.send_email import EmailSender
 from datetime import datetime
 from pathlib import Path
 
-# TODO To check path using pathlib
 
 # Activamos logging
 logging.basicConfig(
     level=logging.INFO,     # Nivel mínimo de mensajes a mostrar
-    format='%(message)s',   # Formato del mensaje
-    # format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Formato del mensaje
+    # format='%(message)s',   # Formato del mensaje
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Formato del mensaje
 )
 logger = logging.getLogger(__name__)
 base_dir = Path(__file__).resolve().parent
@@ -51,8 +50,8 @@ class EstadoCorresponsalAnexa:
 
     def run (self):
         email_sender = EmailSender()
-        n_sftp= py_Sftp()
-        n_sftp.connect(host=self.host, port=self.port, username=self.username,password=self.password)
+        n_sftp= py_Sftp(self.host, username=self.username,password=self.password, port=self.port)
+        n_sftp.connect()
         n_sftp.sftp.chdir(self.remote_work_out_directory)
 
         filtered_list_dir = [file for file in n_sftp.sftp.listdir() if "ESITI" in file]
