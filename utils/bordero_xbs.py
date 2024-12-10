@@ -8,12 +8,13 @@ class BorderoXBS:
 
     def __init__(self):
         self.bordero = {"partidas": []}
+        self.cabecera = {}
         self.a00 = {}
         self.line = {}
 
     @staticmethod
     def read_xbs_file(fichero):
-        """Leer el estado del fichero de Gruber"""
+        """Leer el fichero de XBS"""
         resultado = {"Lineas": []}
 
         with open(fichero, "rt") as f:
@@ -123,13 +124,243 @@ class BorderoXBS:
                             "appendix_date_03": fila[236:243],
                         }
                     )
-                    if fila[:4] == "@@PT":  # linea
-                        resultado["Lineas"].append(
-                            {
-                                'Record type@@PT': fila[:4],
-                                'Empty record': fila[4:128],
-                            }
-                        )
+                if fila[:3] == "D00":  # linea
+                    resultado["Lineas"].append(
+                        {
+                            "record_type_d00": fila[1:3],
+                            "sequential_waybill_item": fila[4:6],
+                            "cons_nnent": fila[7:9],
+                            "num_err_of": fila[10:13],
+                            "pack": fila[14:16],
+                            "number_of_packages_on,'in_pales": fila[17:20],
+                            "pa": fila[21:23],
+                            "content_of": fila[24:58],
+                            "code_and_nun-oer": fila[59:93],
+                            "actual_weight": fila[94:102],
+                            "chargeable_weight": fila[103:111],
+                            "lenght_in_meters": fila[112:115],
+                            "width_in_meters": fila[116:119],
+                            "heigth_in_rneters": fila[120:123],
+                            "cubicmeters": fila[124:128],
+                            "loading_ræters": fila[129:131],
+                            "number_of_locations": fila[132:135],
+
+                        }
+                    )
+                if fila[:3] == "D10":  # linea
+                    resultado["Lineas"].append(
+                        {
+                            "record_type_d10": fila[1:3],
+                            "sequential_waybill_item": fila[4:6],
+                            "consignment_position": fila[7:9],
+                            "product_number": fila[10:24],
+                            "country_of_origin": fila[25:27],
+                            "raw_mass_in_kg": fila[28:36],
+                            "fixed_load_in_kg": fila[37:45],
+                            "procedure_code": fila[46:50],
+                            "customs_value": fila[51:61],
+                            "curren": fila[62:64],
+                            "statistical_value": fila[65:75],
+                            "curren": fila[76:78],
+                            "dix": fila[79:84],
+                            "endix_number_01": fila[85:104],
+                            "ndix_date_01": fila[105:112],
+                            "ndix": fila[113:118],
+                            "ndix_number_02": fila[119:138],
+                            "ndix_date_02": fila[139:146],
+                            "ndix": fila[147:152],
+                            "endix_number_03": fila[153:172],
+                            "ndix_date_03": fila[173:180],
+                            "endix": fila[181:186],
+                            "ndix_number_04": fila[187:206],
+                            "ndix_date_04": fila[207:214],
+
+                        }
+                    )
+                if fila[:3] == "E00":  # linea
+                    resultado["Lineas"].append(
+                        {
+                            "record_type_e00": fila[1:3],
+                            "sequential_waybill_item": fila[4:6],
+                            "consignment_position": fila[7:9],
+                            "gg_release": fila[10:12],
+                            "number_of_packages": fila[13:16],
+                            "gross_weight_in_kg": fila[17:25],
+                            "un_number": fila[26:],
+                            "description_of_packaging": fila[30:64],
+                            "multiplie": fila[65:68],
+                            "gg_database_id": fila[69:71],
+                            "unique_key": fila[72:81],
+                            "material_name/dangerous_goods_description": fila[82:291],
+                            "additional_text_for_n.a.g.": fila[292:361],
+                            "dangerous_goods_sample": fila[362:364],
+                            "dangerous_goods_sample_1": fila[365:367],
+                            "dangerous_goods_sample_2": fila[368:370],
+                            "dangerous_goods_sample_3": fila[371:373],
+                            "packaging_group/classification_code": fila[374:377],
+                            "net_explosive_mass_in_kg": fila[378:386],
+                            "transport_class": fila[387:387],
+                            "limited_amount_lq_yn": fila[388:388],
+                            "calculated_dangerous_goods_points": fila[389:397],
+
+                        }
+                    )
+                if fila[:3] == "F00":  # linea
+                    resultado["Lineas"].append(
+                        {
+                            "record_type_f00": fila[1:3],
+                            "sequential_waybill_item": fila[4:6],
+                            "consignment_position": fila[7:9],
+                            "barcode": fila[10:44],
+                            "reference_qualifier": fila[45:47],
+                            "reference_number": fila[48:82],
+                            "reference_qualifier_1": fila[83:85],
+                            "reference_number_1": fila[86:120],
+                            "reference_qualifier_2": fila[121:123],
+                            "reference_number_2": fila[124:158],
+                            "reference_qualifier_3": fila[159:161],
+                            "reference_number_3": fila[162:196],
+                            "reference_qualifier_4": fila[197:199],
+                            "reference_number_4": fila[200:234],
+                        }
+                    )
+                if fila[:3] == "G00":  # linea
+                    resultado["Lineas"].append(
+                        {
+                            "record_type_g00": fila[1:3],
+                            "sequential_waybill_item": fila[4:6],
+                            "consignment_number_sending_depot": fila[7:41],
+                            "actual_consignment_gross_weight_in_kg": fila[42:50],
+                            "delivery_term": fila[51:53],
+                            "direct_delivery_yn": fila[54:54],
+                            "pickup_date:": fila[55:62],
+                            "picku_time_from": fila[63:66],
+                            "picku_time_to": fila[67:700],
+                            "logistics_model": fila[71:76],
+                            "consignment_number_for_receiving_depot": fila[77:111],
+                            "consignor_id_original_waybill": fila[112:146],
+                            "consignee_id_original_waybill": fila[147:181],
+                            "material_group": fila[182:184],
+                            "goods_val_ue": fila[185:195],
+                            "currency_of_goods_value": fila[196:198],
+                            "chargeable_consignment_weight_in_kg": fila[199:207],
+                            "cubic_meters": fila[208:212],
+                            "loading_meters": fila[213:215],
+                            "number_of_pallet_locations": fila[216:219],
+                            "number_of_additional_loading_tools_1": fila[220:221],
+                            "packaging_type_for_additional_loading_tools_1": fila[222:224],
+                            "number_of_additional_loading_tools_2": fila[225:226],
+                            "packaging_type_for_additional_loading_tools_2": fila[227:229],
+                        }
+                    )
+                if fila[:3] == "H00":  # linea
+                    resultado["Lineas"].append(
+                        {
+                            "record_type_h00": fila[1:3],
+                            "sequential_waybill_item": fila[4:6],
+                            "text_code_1": fila[7:9],
+                            "additional_text_1": fila[10:44],
+                            "text_code_2": fila[45:47],
+                            "additonal_text_2": fila[48:82],
+                            "text_code_3": fila[83:85],
+                            "additional_text_3": fila[86:120],
+                            "text_code_4": fila[121:123],
+                            "additional_text_4": fila[124:158],
+                            "text_code_5'": fila[159:161],
+                            "additonal_text_5": fila[162:196],
+                            "text_code_6": fila[197:199],
+                            "additional_text_6": fila[200:234],
+                        }
+                    )
+                if fila[:3] == "H10":  # linea
+                    resultado["Lineas"].append(
+                        {
+                            "record_type_h10": fila[:3],
+                            "sequential_waybill_item": fila[4:6],
+                            "qualifier_for_text_usage_1": fila[7:9],
+                            "any_text_1": fila[10:79],
+                            "qualifier_for_text_usage_2": fila[80:82],
+                            "any_text_2": fila[83:152],
+                            "qualifier_for_text_usage_3": fila[153:155],
+                            "any_text_3": fila[156:225],
+                        }
+                    )
+                if fila[:3] == "I00":  # linea
+                    resultado["Lineas"].append(
+                        {
+                            "record_type_i00": fila[1:3],
+                            "se_uential": fila[4:6],
+                            "service_1": fila[7:9],
+                            "tax_code": fila[10:10],
+                            "amount_1": fila[11:10],
+                            "service_2": fila[20:22],
+                            "tax_code_2": fila[23:23],
+                            "amount_2": fila[24:32],
+                            "service_3": fila[33:35],
+                            "tax_code_3": fila[36:36],
+                            "amount_3": fila[37:45],
+                            "service_4": fila[46:48],
+                            "tax_code_4": fila[49:49],
+                            "amount_4": fila[50:58],
+                            "service_5": fila[59:61],
+                            "tax_code_5": fila[62:62],
+                            "amount_5": fila[63:71],
+                            "service_6": fila[72:74],
+                            "tax_code_6": fila[75:75],
+                            "amount_6": fila[76:84],
+                            "service_7": fila[85:87],
+                            "tax_code_7": fila[88:88],
+                            "amount_7": fila[89:97],
+                            "service_8": fila[98:100],
+                            "tax_code_8": fila[101:101],
+                            "amount_8": fila[102:110],
+                            "service_9": fila[111:113],
+                            "tax_code_9": fila[114:114],
+                            "amount_9": fila[115:123],
+                            "service_10": fila[124:126],
+                            "tax_code_10": fila[127:127],
+                            "amount_10": fila[128:136],
+
+                        }
+                    )
+                if fila[:3] == "j00":  # linea
+                    resultado["Lineas"].append(
+                        {
+                            "record_type_j00": fila[1:3],
+                            "total_number_of_consignments": fila[4:6],
+                            "total_number_of_packages": fila[7:12],
+                            "actual_gross_weight_in_kg": fila[13:21],
+                            "number_of_box_pallets": fila[22:25],
+                            "number_of_euro_flat_pallets": fila[26:29],
+                            "number_of_additional_loading_tools_flat": fila[30:33],
+                            "number_of_additional_oadlng_tools_box": fila[34:37],
+                            "totals_taxable_from100": fila[38:48],
+                            "totals_not_taxable_from100": fila[49:59],
+                            "totals_of_roduct_value_cod_from_100": fila[60:70],
+                            "totals_of_customs_from_100": fila[71:81],
+                            "totals_of_im": fila[82:92],
+                            "totas_of_value_added_tax": fila[93:103],
+                        }
+                    )
+
+                if fila[:3] == "z00":  # linea
+                    resultado["Lineas"].append(
+                        {
+                            "record_type_z00": fila[1:3],
+                            "total_number_of_data_records": fila[4:9],
+                            "date_of_creation": fila[10:17],
+                            "time_of_creation": fila[18:23],
+                        }
+                    )
+
+                if fila[:4] == "@@PT":  # linea
+                    resultado["Lineas"].append(
+                        {
+                            'Record type@@PT': fila[:4],
+                            'Empty record': fila[4:128],
+                        }
+                    )
+
         return resultado
 
 
@@ -139,3 +370,9 @@ class BorderoXBS:
     # TODO Ojo! cuál es nrefcor? expediente_ref_cor o partida_ref_cor
     def partida_ref_cor(self):
         return self.cabecera[' ---¿?--- '].strip
+
+    def genera_json_bordero(self, path):
+        logging.info("Generando jsin")
+        file_name = f"{path}_Bordero{self.cabecera["waybill_number"].strip()}.json"
+        with open(file_name, "wt") as file_cab:
+            json.dump(self.bordero, file_cab, indent=3)
