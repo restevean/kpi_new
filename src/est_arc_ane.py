@@ -19,12 +19,14 @@ logging.basicConfig(
     # format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Formato del mensaje
 )
 logger = logging.getLogger(__name__)
+base_dir = Path(__file__).resolve().parent
 
-load_dotenv(dotenv_path="../conf/.env.base")
+load_dotenv(dotenv_path=base_dir.parent / "conf" / ".env.base")
+
 ENTORNO = os.getenv("ENTORNO")
 EMAIL_OURS = os.getenv("EMAIL_OURS")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
-load_dotenv(dotenv_path=f"../conf/.env.{INTEGRATION_CUST}")
+load_dotenv(dotenv_path=base_dir.parent / "conf" / f".env.{INTEGRATION_CUST}")
 EMAIL_TO = os.getenv("EMAIL_TO_ARC")
 
 class EstadoCorresponsalAnexa:
@@ -109,9 +111,9 @@ class EstadoCorresponsalAnexa:
                                 resp_hito = self.bm.post_partida_tracking(ipda=resp_partida["contenido"][0]["ipda"],
                                                                         data_json=hito_json)
                                 if resp_hito.get("status_code")==201:
-                                    mensaje+=(f"Hito {est_anexa} -- {est.get("Event Description").strip()} "
-                                              f"para la partida {cpda} subido.\n")
-                                    # Mover fichero
+                                    mensaje+=f"Hito {est_anexa} -- {est.get("Event Description").strip()} "
+                                    mensaje +=f"para la partida {cpda} subido.\n"
+                                    # Mover ficher
                                     os.rename(self.local_work_directory / fichero,
                                               self.local_work_directory / "arc" / "edi" / "processed" / fichero)
                                 # Si el status code no es 201

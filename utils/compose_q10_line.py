@@ -82,7 +82,7 @@ def compose_arc_header(**kwargs):
             value = value.replace(":", "")[:4]  # Convierte "HH:MM" en "HHMM"
         value_str = str(value).ljust(width)[:width]
         n_string += value_str
-    return n_string
+    return n_string+"\n"
 
 
 if __name__ == "__main__":

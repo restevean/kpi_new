@@ -3,7 +3,7 @@
 import os
 import logging
 from dotenv import load_dotenv
-from jsonmerge import merge
+#from jsonmerge import json
 from utils.sftp_connect import SftpConnection
 from utils.bordero import BorderoArcese
 from utils.bmaster_api import BmasterApi as BmApi
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 base_dir = Path(__file__).resolve().parent
 
-load_dotenv(dotenv_path="../conf/.env.base")
+load_dotenv(dotenv_path=base_dir.parent / "conf" / ".env.base")
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
 
@@ -190,10 +190,10 @@ class PartidaArcAne:
             "fechallegada": expediente["flle"],  # ,
         }
         if expedidor_json_data is not None:
-            partida_json = merge(partida_json, expedidor_json_data)
+            print ("hola")#partida_json = merge(partida_json, expedidor_json_data)
 
         if destinatario_json_data is not None:
-            partida_json = merge(partida_json, destinatario_json_data)
+            print("hola")  #partida_json = merge(partida_json, destinatario_json_data)
         return partida_json
 
     def download_files(self):
@@ -201,7 +201,7 @@ class PartidaArcAne:
         n_sftp = SftpConnection()
 
         try:
-            logger.debug("\ --- Estableciendo conexión SFTP...")
+            logger.debug(" --- Estableciendo conexión SFTP...")
             n_sftp.connect(self.sftp_url, self.sftp_port, self.sftp_user, self.sftp_pw)
             logger.debug(" --- Conexión SFTP establecida correctamente.")
 

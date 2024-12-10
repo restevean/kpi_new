@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # Empezamos con pathlib y obtenemos el path
 base_dir = Path(__file__).resolve().parent
 
-load_dotenv(dotenv_path="../conf/.env.base")
+load_dotenv(dotenv_path="../conf/..env.base")
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
 

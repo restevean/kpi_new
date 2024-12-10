@@ -15,9 +15,6 @@ import paramiko
 from pathlib import Path
 
 
-# sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-
-# script_dir = Path(__file__).resolve().parent
 
 # Activamos logging
 logging.basicConfig(
@@ -26,12 +23,12 @@ logging.basicConfig(
     # format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Formato del mensaje
 )
 logger = logging.getLogger(__name__)
+base_dir = Path(__file__).resolve().parent
+load_dotenv(dotenv_path=base_dir.parent / "conf" / ".env.base")
 
-
-load_dotenv(dotenv_path="../conf/.env.base")
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
-load_dotenv(dotenv_path=f"../conf/.env.{INTEGRATION_CUST}")
+load_dotenv(dotenv_path=base_dir.parent / "conf" /f".env.{INTEGRATION_CUST}{ENTORNO}")
 
 class EstadoAneArc:
 
@@ -105,7 +102,12 @@ class EstadoAneArc:
             "SAL001": ("402", "In delivery"),
             "TRA0081": ("202", "Not delivered - wrong address"),
             "TRA0102": ("402", "In delivery"),
-            "TRA0106": ("COR", "Shipment delivered"),
+            "TRA0105": ("COR", "Shipment delivered"),
+            "LINTRK01": ("COR", "Shipment delivered"),
+            "LINTRK11": ("202", "Not delivered - wrong address"),
+            "LINTRK06": ("202", "Shipment delivered"),
+            "LINTRK07": ("CRI", "Shipment delivered, with remarks")
+
         }
 
     @property
@@ -263,30 +265,31 @@ class EstadoAneArc:
 
     def run(self):
         query_reply = self.bm.n_consulta(self.query_partidas)
-        df = pd.DataFrame(query_reply['contenido'])
-        if 'itrk' in df.columns:
-            self.max_itrk = df['itrk'].max()
-        else:
-            # Manejar el caso donde 'itrk' no existe
-            self.max_itrk = None  # O cualquier valor predeterminado que tenga sentido para tu aplicación
-            logging.warning("La columna 'itrk' no se encontró en el DataFrame.")
+        if len(query_reply["contenido"]) > 0:
+            df = pd.DataFrame(query_reply['contenido'])
+            if 'itrk' in df.columns:
+                self.max_itrk = df['itrk'].max()
+            else:
+                # Manejar el caso donde 'itrk' no existe
+                self.max_itrk = None  # O cualquier valor predeterminado que tenga sentido para tu aplicación
+                logging.warning("La columna 'itrk' no se encontró en el DataFrame.")
 
-        df = df.fillna("")
-        pd.options.display.float_format = '{:.0f}'.format
-        logging.info(df.to_markdown(index=False))
-        logging.info(self.max_itrk)
-        if self.max_itrk is not None:
-            self.process_query_response(query_reply)
-            self.actualizar_comunicado()
-
-            # Repesca solo si self.max_itrk es distinito de None
-            second_query_reply = self.bm.n_consulta(self.query_repesca)
-            if second_query_reply.get("contenido") != []:
-                df = pd.DataFrame(second_query_reply['contenido'])
-                logging.info(df.to_markdown(index=False))
-                self.partidas = None
-                self.process_query_response(second_query_reply)
+            df = df.fillna("")
+            pd.options.display.float_format = '{:.0f}'.format
+            logging.info(df.to_markdown(index=False))
+            logging.info(self.max_itrk)
+            if self.max_itrk is not None:
+                self.process_query_response(query_reply)
                 self.actualizar_comunicado()
+
+                # Repesca solo si self.max_itrk es distinito de None
+                second_query_reply = self.bm.n_consulta(self.query_repesca)
+                if second_query_reply.get("contenido") != []:
+                    df = pd.DataFrame(second_query_reply['contenido'])
+                    logging.info(df.to_markdown(index=False))
+                    self.partidas = None
+                    self.process_query_response(second_query_reply)
+                    self.actualizar_comunicado()
 
 
 if __name__ == "__main__":

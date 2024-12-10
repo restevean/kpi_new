@@ -182,11 +182,11 @@ class MensajeEstado:
     def conversion_stat_arcese_anexa (self, estado =""):
         conversion_dict = {
             "TBD": "ANXE01",
-            "COR": "ANXE05", 
+            "COR": "ANXE06",
             "CRI": "ANXE07", 
             "302": "ANXE11", 
-            "VIA": "TRA0106",
-            "VSC": "ANXE06", # SHIPMENT UNLOADED
+            #"VIA": "TRA0106",
+            "VSC": "ANXE05", # SHIPMENT UNLOADED
             # "DESCARFAL": ("SMA", "Missing inbound"),
             # "DESCARFTOT": ("SMA", "Missing inbound"),
             # "DESCARKO": ("SMA", "Missing inbound"),

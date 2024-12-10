@@ -7,13 +7,15 @@ from typing import Any, Dict
 import os
 from dotenv import load_dotenv
 from utils.safe_get_token import safe_get_token
+from pathlib import Path
 
+base_dir = Path(__file__).resolve().parent
+load_dotenv(dotenv_path=base_dir.parent / "conf" / ".env.base")
 
-load_dotenv(dotenv_path='../conf/.env.base')
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
 BM_API_URL = os.getenv("BM_API_URL")
-load_dotenv(dotenv_path=f'../conf/.env.{INTEGRATION_CUST}{ENTORNO}')
+load_dotenv(dotenv_path=base_dir.parent / "conf" / f'.env.{INTEGRATION_CUST}{ENTORNO}')
 # BM_API_AUTH_URL = os.getenv("BM_API_AUTH_URL")
 # USER_ANE_TEST = os.getenv("USER_ANE_TEST")
 # USER_ANE_TEST = os.getenv("USER_ANE_TEST")

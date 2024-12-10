@@ -3,11 +3,14 @@ from dotenv import load_dotenv
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from pathlib import Path
 
-load_dotenv(dotenv_path="../conf/.env.base")
+base_dir = Path(__file__).parent
+base_dir= base_dir.parent
+load_dotenv(dotenv_path=base_dir/ "conf" /".env.base")
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
-load_dotenv(dotenv_path=f"../conf/.env.{INTEGRATION_CUST}{ENTORNO}")
+load_dotenv(dotenv_path=base_dir/ "conf" / f".env.{INTEGRATION_CUST}{ENTORNO}")
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = int(os.getenv("SMTP_PORT"))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME")

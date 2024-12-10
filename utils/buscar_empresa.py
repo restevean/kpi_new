@@ -1,7 +1,7 @@
 # utils/buscar_empresa.py
 
 import logging
-from bmaster_api import BmasterApi
+from utils.bmaster_api import BmasterApi
 
 # logging.basicConfig(
 #     level=logging.INFO,  # Nivel mínimo de mensajes a mostrar

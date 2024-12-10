@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 # TODO Optimizar la carga de variables de entorno en la inicialización del objeto
-load_dotenv(dotenv_path=script_dir.parent / "conf" / ".env.base")
+load_dotenv(dotenv_path=script_dir.parent / "conf" / "..env.base")
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
 

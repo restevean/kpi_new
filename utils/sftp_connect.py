@@ -3,7 +3,7 @@ import paramiko
 from dotenv import load_dotenv
 
 
-load_dotenv(dotenv_path="../conf/.env.base")
+load_dotenv(dotenv_path="../conf/..env.base")
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
 load_dotenv(dotenv_path=f"../conf/.env.{INTEGRATION_CUST}{ENTORNO}")
