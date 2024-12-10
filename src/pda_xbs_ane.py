@@ -107,7 +107,7 @@ class PartidaXbsAne:
 
 
     def files_process(self, n_path):
-        logger.info("\nIniciando el procesamiento de archivos...")
+        logger.info(" --- Iniciando el procesamiento de archivos...")
         bm = BmApi()
         email_sender = EmailSender()
         encontrado_expediente = False
@@ -118,125 +118,129 @@ class PartidaXbsAne:
             info['path'] = file_path
 
             try:
-                logger.info(f"\nProcesando archivo: {file_path}")
+                logger.info(f" --- Procesando archivo: {file_path}")
 
                 # TODO BorderoXBS()
-                bx = BorderoXBS()
-                archivo = bx.read_xbs_file(file_path)
+                # bx = BorderoXBS()
+                # archivo = bx.cabecera_xbs(file_path)
                 # Proceso del archivo individual
-                ipda = 0
-                cpda = ""
+                # ipda = 0
+                # cpda = ""
 
                 # with open(file_path, 'rt') as archivo:
+                with open(file_path, 'rt') as archivo:
+                    ipda = 0
+                    cpda = ""
+                    bx = BorderoXBS()
 
 
-                # Procesamos la fila
-                for fila in archivo:
-                    # Si es cabecera
-                    if fila[:3] == 'A00':
-                        # cab_partida = bx.registro_a00(fila=fila)
-                        trip = bx.expediente_ref_cor()  # 2024MO12103
+                    # Procesamos la fila
+                    for fila in archivo:
+                        # Si es cabecera
+                        if fila[:3] == 'A00':
+                            cab_partida = bx.cabecera_xbs(fila=fila)
+                            trip = bx.expediente_ref_cor()  # 2024MO12103
 
-                        # Buscamos el expediente
-                        query = f"select * from traexp where nrefcor in ('{trip}', '{n_ref(trip)}')"
-                        query_reply = bm.n_consulta(query=query)
+                            # Buscamos el expediente
+                            query = f"select * from traexp where nrefcor in ('{trip}', '{n_ref(trip)}')"
+                            query_reply = bm.n_consulta(query=query)
 
-                        # Si la consulta tiene contenido (si hay expediente)
-                        if query_reply["contenido"]:
-                            encontrado_expediente = True
-                            if f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}" not in mensaje:
-                                mensaje += f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}"
-                                logger.info(f"\nEncontrado expediente {query_reply["contenido"][0]["cexp"]}")
-                            expediente_bm = query_reply["contenido"][0]
-                            pda_json_xbs = self.partida_json(cabecera=cab_partida, expediente=expediente_bm)
+                            # Si la consulta tiene contenido (si hay expediente)
+                            if query_reply["contenido"]:
+                                encontrado_expediente = True
+                                if f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}" not in mensaje:
+                                    mensaje += f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}"
+                                    logger.info(f"\nEncontrado expediente {query_reply["contenido"][0]["cexp"]}")
+                                expediente_bm = query_reply["contenido"][0]
+                                pda_json_xbs = self.partida_json(cabecera=cab_partida, expediente=expediente_bm)
 
-                            nref_value = n_ref(cab_partida["Order Full Number"].strip())
-                            query_existe = f"SELECT ipda, cpda FROM trapda WHERE nrefcor='{nref_value}'"
+                                nref_value = n_ref(cab_partida["Order Full Number"].strip())
+                                query_existe = f"SELECT ipda, cpda FROM trapda WHERE nrefcor='{nref_value}'"
 
-                            # Buscamos la partida
-                            query_existe_reply = bm.n_consulta(query=query_existe)
+                                # Buscamos la partida
+                                query_existe_reply = bm.n_consulta(query=query_existe)
 
-                            # Si no existe la partidda, enchufamos partida
-                            if not query_existe_reply["contenido"]:
-                                resp_partida = bm.post_partida(data_json=pda_json_xbs)
+                                # Si no existe la partidda, enchufamos partida
+                                if not query_existe_reply["contenido"]:
+                                    resp_partida = bm.post_partida(data_json=pda_json_xbs)
 
-                                # Si exito al enchufar la partida
-                                if resp_partida["status_code"] == 201:
-                                    ipda = resp_partida["contenido"]["id"]
-                                    cpda = resp_partida["contenido"]["codigo"]
-                                    mensaje += f"\nCreada partida {resp_partida['contenido']['codigo']}"
+                                    # Si exito al enchufar la partida
+                                    if resp_partida["status_code"] == 201:
+                                        ipda = resp_partida["contenido"]["id"]
+                                        cpda = resp_partida["contenido"]["codigo"]
+                                        mensaje += f"\nCreada partida {resp_partida['contenido']['codigo']}"
 
-                                # Si falla comunicar la partida
+                                    # Si falla comunicar la partida
+                                    else:
+                                        errores = "\n".join(
+                                            e["Descripcion"] for e in resp_partida["contenido"]["Errores"])
+                                        mensaje += f"\nNo se ha creado la partida {n_ref(cab_partida['Order Full Number'
+                                                                                         ].strip())} \n{errores}\n"
+
+                                # Si existe la partida
                                 else:
-                                    errores = "\n".join(
-                                        e["Descripcion"] for e in resp_partida["contenido"]["Errores"])
-                                    mensaje += f"\nNo se ha creado la partida {n_ref(cab_partida['Order Full Number'
-                                                                                     ].strip())} \n{errores}\n"
+                                    ipda = query_existe_reply["contenido"][0]["ipda"]
+                                    mensaje += (f"\nExiste la partida {query_existe_reply['contenido'][0]['cpda']}, "
+                                                f"ref corresponsal: {n_ref(cab_partida['Order Full Number'].strip())}\n")
 
-                            # Si existe la partida
-                            else:
-                                ipda = query_existe_reply["contenido"][0]["ipda"]
-                                mensaje += (f"\nExiste la partida {query_existe_reply['contenido'][0]['cpda']}, "
-                                            f"ref corresponsal: {n_ref(cab_partida['Order Full Number'].strip())}\n")
+                            # Si no tiene expediente por primera vez
+                            else:  # self.local_work_pof_process not in n_path:
+                                # Marcamos el fichero para moverlo a process_pending
+                                self.files[file]["process_again"] = True
+                                # Asignamos el mensaje del correo
+                                self.files[file]["n_message"] = mensaje
 
-                        # Si no tiene expediente por primera vez
-                        else:  # self.local_work_pof_process not in n_path:
-                            # Marcamos el fichero para moverlo a process_pending
-                            self.files[file]["process_again"] = True
+                            # Si no tiene expediente y es de repesca
+                            # else:
+                            # El fichero ya está en el path adecuado
+                            # Ya se envió correo
                             # Asignamos el mensaje del correo
-                            self.files[file]["n_message"] = mensaje
+                            # self.files[file]["n_message"] = mensaje
+                            # ...
 
-                        # Si no tiene expediente y es de repesca
-                        # else:
-                        # El fichero ya está en el path adecuado
-                        # Ya se envió correo
-                        # Asignamos el mensaje del correo
-                        # self.files[file]["n_message"] = mensaje
-                        # ...
+                        # No es cabecera y se ha encontrado expediente (LINEAS)
+                        elif encontrado_expediente:
+                            n_linea = bx.linea_arcese(fila)
 
-                    # No es cabecera y se ha encontrado expediente (LINEAS)
-                    elif encontrado_expediente:
-                        n_linea = bx.linea_arcese(fila)
+                            # Si tiene nº ipda (partida) y barcode (algún bulto)
+                            if ipda > 0 and n_linea["Barcode"].strip():
 
-                        # Si tiene nº ipda (partida) y barcode (algún bulto)
-                        if ipda > 0 and n_linea["Barcode"].strip():
+                                # Comprobamos que no existe ese bulto
+                                query_barcode = query = (f"SELECT COUNT(1) AS cuenta FROM ttemereti WHERE ipda={ipda} "
+                                                         f"AND dcodbar='{n_linea['Barcode'].strip()}'")
+                                query_barcode_reply = bm.n_consulta(query=query_barcode)
 
-                            # Comprobamos que no existe ese bulto
-                            query_barcode = query = (f"SELECT COUNT(1) AS cuenta FROM ttemereti WHERE ipda={ipda} "
-                                                     f"AND dcodbar='{n_linea['Barcode'].strip()}'")
-                            query_barcode_reply = bm.n_consulta(query=query_barcode)
+                                # Si no existe el bulto
+                                if not query_barcode_reply:
+                                    json_etiqueta = {
+                                        "codigobarras": n_linea["Barcode"].strip(),
+                                        "altura": float(n_linea["Hight"].strip()) / 100,
+                                        "ancho": float(n_linea["Width"].strip()) / 100,
+                                        "largo": float(n_linea["Lenght"].strip()) / 100,
+                                    }
+                                    #  Enchufamos el bulto
+                                    resp_etiqueta = bm.post_partida_etiqueta(id=ipda, data_json=json_etiqueta)
 
-                            # Si no existe el bulto
-                            if not query_barcode_reply:
-                                json_etiqueta = {
-                                    "codigobarras": n_linea["Barcode"].strip(),
-                                    "altura": float(n_linea["Hight"].strip()) / 100,
-                                    "ancho": float(n_linea["Width"].strip()) / 100,
-                                    "largo": float(n_linea["Lenght"].strip()) / 100,
-                                }
-                                #  Enchufamos el bulto
-                                resp_etiqueta = bm.post_partida_etiqueta(id=ipda, data_json=json_etiqueta)
+                                    # Actualizamos el emnsaje en función del resultado
+                                    if resp_etiqueta["cod_error"] == 201:
+                                        mensaje += f"Subida Etiqueta. {n_linea['Barcode'].strip()}\n\n"
 
-                                # Actualizamos el emnsaje en función del resultado
-                                if resp_etiqueta["cod_error"] == 201:
-                                    mensaje += f"Subida Etiqueta. {n_linea['Barcode'].strip()}\n\n"
-
+                                    else:
+                                        mensaje += (f"\nYa existe la etiqueta {n_linea['Barcode'].strip()} "
+                                                    f"de la "
+                                                    f"partida {cpda}")
+                                # Si existe el bulto
                                 else:
-                                    mensaje += (f"\nYa existe la etiqueta {n_linea['Barcode'].strip()} "
-                                                f"de la "
-                                                f"partida {cpda}")
-                            # Si existe el bulto
+                                    logging.info("Bulto encontrado")
+
                             else:
-                                logging.info("Bulto encontrado")
+                                logging.info(f"No es cabecera, cpda: {cpda}, ipda: {ipda}, barcode: {n_linea['Barcode'].strip()}")
+                                ...
 
-                        else:
-                            logging.info(f"No es cabecera, cpda: {cpda}, ipda: {ipda}, barcode: {n_linea['Barcode'].strip()}")
-                            ...
-
-                if not info["process_again"]:
-                    # ba.genera_json_bordero(path=f"{self.local_work_processed}/Bordero"
-                    #                         f"_{trip}{file}")
-                    bx.genera_json_bordero(path= self.local_work_processed / f"Bordero_{trip}{file}")
+                    if not info["process_again"]:
+                        # ba.genera_json_bordero(path=f"{self.local_work_processed}/Bordero"
+                        #                         f"_{trip}{file}")
+                        bx.genera_json_bordero(path= self.local_work_processed / f"Bordero_{trip}{file}")
 
                 info["success"] = True
                 info["n_message"] = mensaje
