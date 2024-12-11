@@ -32,8 +32,8 @@ def safe_get_token(context: str = None) -> str:
         # Procesa la respuesta
         response_payload = json.loads(response['Payload'].read().decode("utf-8"))
         if token := response_payload.get('token'):
-            # print(f"{response_payload.get('status')}\nToken obtenido: \n{token}")
-            print(f"{response_payload.get('status')}")
+            print(f"{response_payload.get('status')}\nToken obtenido: \n{token}")
+            #print(f"{response_payload.get('status')}")
             # logging.info(f"{response_payload.get('status')}\nToken obtenido: \n{token}")
             # logging.info(f"{response_payload.get('status')}")
             return token

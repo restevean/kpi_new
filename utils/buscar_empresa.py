@@ -20,24 +20,34 @@ def busca_destinatario(rsocial='', codpostal='', cpais=''):
         "[aebdir].ipai, cpai "
         "FROM [Anexa].[dbo].[aetent] "
         "INNER JOIN aetemp ON aetent.iemp = aetemp.iemp "
-        "INNER JOIN [aebdir] ON aebdir.idir = aetemp.idirfis "
+        "left JOIN [aebdir] ON aebdir.idir = aetemp.idirfis "
         "INNER JOIN [dbo].[aebcodpos] ON [aebcodpos].icodpos = aebdir.icodpos "
         "INNER JOIN [dbo].[aebpai] ON [aebpai].ipai = [aebdir].ipai "
-        "WHERE dnomfis LIKE '{rsocial}' AND cpai = '{cpais}' "
+        f"WHERE dnomfis LIKE '{rsocial}%' AND cpai = '{cpais}' "
         "AND NOT cent LIKE 'ENT%' AND NOT dnomcom LIKE '%BORRAR%'"
     )
-
+    respuesta_query = bm.n_consulta(base_query)
+    if len (respuesta_query["contenido"])==1:
+        return respuesta_query["contenido"]
     # Bucle para reducir el largo del nombre
+    search_name=rsocial
     while largo > len(rsocial) // 2:
         search_name = rsocial[:largo]
         largo -= 1
 
-        query = base_query.format(rsocial=f"{search_name}%", cpais=cpais)
-        # query_codpost = f"{query} AND ccodpos = '{codpostal}'"
+        base_query = (
+                         "SELECT [aetent].[iemp], ient, [cemp], [dnomfis], [ncif], ccodpos, [aebcodpos].dpob, [idirfis], "
+                         "[aebdir].ipai, cpai "
+                         "FROM [Anexa].[dbo].[aetent] "
+                         "INNER JOIN aetemp ON aetent.iemp = aetemp.iemp "
+                         "left JOIN [aebdir] ON aebdir.idir = aetemp.idirfis "
+                         "INNER JOIN [dbo].[aebcodpos] ON [aebcodpos].icodpos = aebdir.icodpos "
+                         "INNER JOIN [dbo].[aebpai] ON [aebpai].ipai = [aebdir].ipai "
+                         "WHERE dnomfis LIKE '"+search_name+"%' AND cpai = '"+cpais+"' "
+                         "AND NOT cent LIKE 'ENT%' AND NOT dnomcom LIKE '%BORRAR%'" )
 
-        respuesta_query = bm.consulta_(query)
-        if respuesta_query["status_code"] != 200:
-            return respuesta_default
+        respuesta_query = bm.n_consulta(base_query)
+
         contenido = respuesta_query.get("contenido", [])
 
         if len(contenido) == 1:

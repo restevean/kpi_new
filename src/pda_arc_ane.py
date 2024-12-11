@@ -3,7 +3,7 @@
 import os
 import logging
 from dotenv import load_dotenv
-#from jsonmerge import json
+from jsonmerge import merge
 from utils.sftp_connect import SftpConnection
 from utils.bordero import BorderoArcese
 from utils.bmaster_api import BmasterApi as BmApi
@@ -41,8 +41,8 @@ class PartidaArcAne:
         self.sftp_user = os.getenv("SFTP_USER_ARC")
         self.sftp_pw = os.getenv("SFTP_PW_ARC")
         self.sftp_port = os.getenv("SFTP_PORT_ARC")
-        self.email_from = "javier@kpianalisis.com"
-        self.email_to = "resteve24@gmail.com"
+        self.email_from = "Arcese Partida"
+        self.email_to = ["javier@kpianalisis.com, dgorriz@anexalogistica.com, trafico2@anexalogistica.com"]
         self.remote_work_out_directory = os.getenv("SFTP_PDA_PATH_ARC")
         self.local_work_directory = self.base_path.parent / "fixtures" / "arc" / "edi"
         self.local_work_pof_process = self.local_work_directory / "process_pending"
@@ -183,10 +183,17 @@ class PartidaArcAne:
             "fechallegada": expediente["flle"],  # ,
         }
         if expedidor_json_data is not None:
-            print ("hola")#partida_json = merge(partida_json, expedidor_json_data)
+            partida_json = merge(partida_json, expedidor_json_data)
+
+        if partida_json["incoterm"] == "DAP":
+            json_fact = {
+                "clientefacturacion": {
+                    "id": expediente["ientcor"]}
+            }
+            partida_json = merge(partida_json, json_fact)
 
         if destinatario_json_data is not None:
-            print("hola")  #partida_json = merge(partida_json, destinatario_json_data)
+            partida_json = merge(partida_json, destinatario_json_data)
         return partida_json
 
     def download_files(self):
@@ -242,7 +249,10 @@ class PartidaArcAne:
                 "success": False,
                 "n_message": "",
                 "process_again": False,
-                "path": ""
+                "path": "",
+                "expediente":"",
+                "mensaje":""
+
             }
             for file in os.listdir(subdir)
             if os.path.isfile(os.path.join(subdir, file)) and 'BOLLE' in file
@@ -279,6 +289,7 @@ class PartidaArcAne:
                             cab_partida = ba.cabecera_arcese(fila=fila)
                             trip = ba.expediente_ref_cor()  # 2024MO12103
 
+
                             # Buscamos el expediente
                             query = f"select * from traexp where nrefcor in ('{trip}', '{n_ref(trip)}')"
                             query_reply = bm.n_consulta(query=query)
@@ -287,6 +298,7 @@ class PartidaArcAne:
                             if query_reply["contenido"]:
                                 encontrado_expediente = True
                                 if f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}" not in mensaje:
+                                    info["expediente"]=query_reply['contenido'][0]['cexp']
                                     mensaje += f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}"
                                     logger.info(f"\nEncontrado expediente {query_reply["contenido"][0]["cexp"]}")
                                 expediente_bm = query_reply["contenido"][0]
@@ -393,12 +405,12 @@ class PartidaArcAne:
                 logger.error(f"\nError al procesar {file}: {e}\n")
             # finally:
                 # logger.info("Procesamiento de archivo completado.")
-
+        info["mensaje"]=mensaje
 
         # Movemos los archivos a processed o process_pending según corresponda
         # Enviamos los correos
         for file, info in self.files.items():
-            email_sender.send_email("javier@kpianalisis.com", self.email_to, f"Partida: {cpda}", info["message"])
+            email_sender.send_email(from_addrs=self.email_from, to_addrs= self.email_to, subject=f"Arcese Subir partida {info["expediente"]}", body= info["mensaje"])
             # Movemos a las carpetas según el resultado del proceso
             if info["process_again"]:
                 os.rename(info["path"], f"{self.local_work_pof_process / file}")
