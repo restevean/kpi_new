@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 from utils.safe_get_token import safe_get_token
 from pathlib import Path
 
+logger = logging.getLogger(__name__)
+
 base_dir = Path(__file__).resolve().parent
 load_dotenv(dotenv_path=base_dir.parent / "conf" / ".env.base")
 

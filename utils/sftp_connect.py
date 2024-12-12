@@ -1,7 +1,10 @@
 # utils/sftp_connect.py
 
-# import os
 import paramiko
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 """
 from dotenv import load_dotenv
@@ -22,12 +25,6 @@ SFTP_PORT = os.getenv("SFTP_PORT")
 
 class SftpConnection:
     def __init__(self, hostname, username, password, port=22):
-        # self.host = os.getenv("SFTP_SERVER")
-        # self.username = os.getenv("SFTP_USER")
-        # self.password = os.getenv("SFTP_PW")
-        # self.port = int(os.getenv("SFTP_PORT"))
-        # self.sftp = None
-        # self.transport = None
         self.host = hostname
         self.username = username
         self.password = password
@@ -35,14 +32,13 @@ class SftpConnection:
         self.sftp = None
         self.transport = None
 
-    # def connect(self, host=SFTP_SERVER, port=SFTP_PORT, username=SFTP_USER, password=SFTP_PW):
     def connect(self):
         self.transport = paramiko.Transport((self.host, int(self.port)))
         self.transport.connect(username=self.username, password=self.password)  # Conectar usando la contraseña
         self.sftp = paramiko.SFTPClient.from_transport(self.transport)
-        print("Conexión establecida")
+        logging.info(f" --- Conexión SFTP establecida en {self.host}")
 
     def disconnect(self):
         self.sftp.close()
         self.transport.close()
-        print("Conexión cerrada")
+        print(f" --- Conexión SFTP en {self.host} cerrada")

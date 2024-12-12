@@ -4,6 +4,9 @@ import ftplib
 import logging
 
 
+logger = logging.getLogger(__name__)
+
+
 class FtpConnection:
     def __init__(self, host, username, password, port=21):
         self.host = host

@@ -3,16 +3,14 @@
 import logging
 from utils.bmaster_api import BmasterApi
 
-# logging.basicConfig(
-#     level=logging.INFO,  # Nivel mínimo de mensajes a mostrar
-#     # format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Formato del mensaje
-#     format=' %(message)s',  # Formato del mensaje
-# )
 
 logger = logging.getLogger(__name__)
 
+
 def busca_destinatario(rsocial='', codpostal='', cpais=''):
     largo = len(rsocial)
+
+    # Ojo, instanciamos a bmasterApi
     bm = BmasterApi()
     respuesta_default = {"ient": 0}
     base_query = (
@@ -28,7 +26,7 @@ def busca_destinatario(rsocial='', codpostal='', cpais=''):
     )
     respuesta_query = bm.n_consulta(base_query)
     if len (respuesta_query["contenido"])==1:
-        return respuesta_query["contenido"]
+        return respuesta_query["contenido"][0]
     # Bucle para reducir el largo del nombre
     search_name=rsocial
     while largo > len(rsocial) // 2:
@@ -44,24 +42,31 @@ def busca_destinatario(rsocial='', codpostal='', cpais=''):
                          "INNER JOIN [dbo].[aebcodpos] ON [aebcodpos].icodpos = aebdir.icodpos "
                          "INNER JOIN [dbo].[aebpai] ON [aebpai].ipai = [aebdir].ipai "
                          "WHERE dnomfis LIKE '"+search_name+"%' AND cpai = '"+cpais+"' "
-                         "AND NOT cent LIKE 'ENT%' AND NOT dnomcom LIKE '%BORRAR%'" )
+                         "AND NOT cent LIKE 'ENT%' AND NOT dnomcom LIKE '%BORRAR%'"
+        )
 
         respuesta_query = bm.n_consulta(base_query)
 
         contenido = respuesta_query.get("contenido", [])
 
         if len(contenido) == 1:
-            logger.info(f"\nDevuelve {contenido[0]['ient']}\n")
+            logger.info(f" --- Devuelve {contenido[0]['ient']}")
             return contenido[0]
 
         elif len(contenido) > 1:
-            logger.info("\nRespuesta Query con denominación de origen")
+            logger.info(" --- Respuesta Query con denominación de origen")
             for entidad in contenido:
-                logger.info(f"\n{entidad['ient']} ---> {entidad['dnomfis']} ---> {entidad['cemp']} "
+                logger.info(f" --- {entidad['ient']} ---> {entidad['dnomfis']} ---> {entidad['cemp']} "
                             f"Codpostal: {entidad['ccodpos']}")
 
                 if entidad['ccodpos'] == codpostal.replace(" ", ""):
                     return entidad
 
-    logger.info( f"\nNO SE ENCUENTRA EL DESTINATARIO {rsocial} con codigo postal: {codpostal}")
+    logger.info( f" --- NO SE ENCUENTRA EL DESTINATARIO {rsocial} con codigo postal: {codpostal}")
     return respuesta_default
+
+
+if __name__ == "__main__":
+    print(busca_destinatario('HIDRO-WATER', '46960', 'ES'))
+    print(busca_destinatario('MATIC SRL', '46960', 'ES'))
+    print(busca_destinatario('SLUSH & BEVERAGE EQUIPMENT V AIR, S.L.U.', '46716', 'ES'))

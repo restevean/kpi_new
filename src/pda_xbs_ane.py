@@ -11,6 +11,7 @@ from utils.misc import n_ref
 from utils.buscar_empresa import busca_destinatario
 from utils.send_email import EmailSender
 from pathlib import Path
+import json
 # import psycopg2
 
 # Activamos logging
@@ -140,6 +141,9 @@ class PartidaXbsAne:
                         if fila[:3] == 'A00':
                             cab_partida = bx.cabecera_xbs(fila=fila)
                             trip = bx.expediente_ref_cor()  # 2024MO12103
+                            cab_partida_fichero = open(f"../cabecera_partida-{cab_partida["waybill_number"]}.json", "wt")
+                            cab_partida_fichero.write(json.dumps(cab_partida))
+                            cab_partida_fichero.close()
 
                             # Buscamos el expediente
                             query = f"select * from traexp where nrefcor in ('{trip}', '{n_ref(trip)}')"
