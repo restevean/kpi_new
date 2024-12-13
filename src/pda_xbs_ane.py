@@ -118,144 +118,148 @@ class PartidaXbsAne:
             file_path = os.path.join(n_path, file)
             info['path'] = file_path
 
-            try:
-                logger.info(f" --- Procesando archivo: {file_path}")
+            # try:
+            logger.info(f" --- Procesando archivo: {file_path}")
 
-                # TODO BorderoXBS()
-                # bx = BorderoXBS()
-                # archivo = bx.cabecera_xbs(file_path)
-                # Proceso del archivo individual
-                # ipda = 0
-                # cpda = ""
+            with open(file_path, 'rt') as archivo:
+                ipda = 0
+                cpda = ""
+                bx = BorderoXBS()
 
-                # with open(file_path, 'rt') as archivo:
-                with open(file_path, 'rt') as archivo:
-                    ipda = 0
-                    cpda = ""
-                    bx = BorderoXBS()
+            #     for fila in archivo:
+            #         if fila[:4] == '@@PH':
+            #             continue
+            #         elif fila[:3] == 'A00':
+            #             cab_partida = bx.cabecera_xbs(fila=fila)
+            #         else:
+            #             n_linea = bx.linea_xbs(fila)
+            #
+            #     trip = bx.expediente_ref_cor()
+            #     bx.genera_json_bordero(path= self.local_work_processed / f"Bordero_{trip}{file}")
 
 
-                    # Procesamos la fila
-                    for fila in archivo:
-                        # Si es cabecera
-                        if fila[:3] == 'A00':
-                            cab_partida = bx.cabecera_xbs(fila=fila)
-                            trip = bx.expediente_ref_cor()  # 2024MO12103
-                            cab_partida_fichero = open(f"../cabecera_partida-{cab_partida["waybill_number"]}.json", "wt")
-                            cab_partida_fichero.write(json.dumps(cab_partida))
-                            cab_partida_fichero.close()
+            # Procesamos la fila
+            for fila in archivo:
+                # Si es cabecera
+                if fila[:3] == 'A00':
+                    cab_partida = bx.cabecera_xbs(fila=fila)
+                    trip = bx.expediente_ref_cor()  # 2024MO12103
+                    cab_partida_fichero = open(f"../cabecera_partida-"
+                                               f"{cab_partida["waybill_number"].strip}.json", "wt")
+                    cab_partida_fichero.write(json.dumps(cab_partida, indent=4))
+                    cab_partida_fichero.close()
 
-                            # Buscamos el expediente
-                            query = f"select * from traexp where nrefcor in ('{trip}', '{n_ref(trip)}')"
-                            query_reply = bm.n_consulta(query=query)
+                    # Buscamos el expediente
+                    query = f"select * from traexp where nrefcor in ('{trip}', '{n_ref(trip)}')"
+                    query_reply = bm.n_consulta(query=query)
 
-                            # Si la consulta tiene contenido (si hay expediente)
-                            if query_reply["contenido"]:
-                                encontrado_expediente = True
-                                if f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}" not in mensaje:
-                                    mensaje += f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}"
-                                    logger.info(f"\nEncontrado expediente {query_reply["contenido"][0]["cexp"]}")
-                                expediente_bm = query_reply["contenido"][0]
-                                pda_json_xbs = self.partida_json(cabecera=cab_partida, expediente=expediente_bm)
+                    # Si la consulta tiene contenido (si hay expediente)
+                    if query_reply["contenido"]:
+                        encontrado_expediente = True
+                        if f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}" not in mensaje:
+                            mensaje += f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}"
+                            logger.info(f"\nEncontrado expediente {query_reply["contenido"][0]["cexp"]}")
+                        expediente_bm = query_reply["contenido"][0]
+                        pda_json_xbs = self.partida_json(cabecera=cab_partida, expediente=expediente_bm)
 
-                                nref_value = n_ref(cab_partida["Order Full Number"].strip())
-                                query_existe = f"SELECT ipda, cpda FROM trapda WHERE nrefcor='{nref_value}'"
+                        nref_value = n_ref(cab_partida["Order Full Number"].strip())
+                        query_existe = f"SELECT ipda, cpda FROM trapda WHERE nrefcor='{nref_value}'"
 
-                                # Buscamos la partida
-                                query_existe_reply = bm.n_consulta(query=query_existe)
+                        # Buscamos la partida
+                        query_existe_reply = bm.n_consulta(query=query_existe)
 
-                                # Si no existe la partidda, enchufamos partida
-                                if not query_existe_reply["contenido"]:
-                                    resp_partida = bm.post_partida(data_json=pda_json_xbs)
+                        # Si no existe la partidda, enchufamos partida
+                        if not query_existe_reply["contenido"]:
+                            resp_partida = bm.post_partida(data_json=pda_json_xbs)
 
-                                    # Si exito al enchufar la partida
-                                    if resp_partida["status_code"] == 201:
-                                        ipda = resp_partida["contenido"]["id"]
-                                        cpda = resp_partida["contenido"]["codigo"]
-                                        mensaje += f"\nCreada partida {resp_partida['contenido']['codigo']}"
+                            # Si exito al enchufar la partida
+                            if resp_partida["status_code"] == 201:
+                                ipda = resp_partida["contenido"]["id"]
+                                cpda = resp_partida["contenido"]["codigo"]
+                                mensaje += f"\nCreada partida {resp_partida['contenido']['codigo']}"
 
-                                    # Si falla comunicar la partida
-                                    else:
-                                        errores = "\n".join(
-                                            e["Descripcion"] for e in resp_partida["contenido"]["Errores"])
-                                        mensaje += f"\nNo se ha creado la partida {n_ref(cab_partida['Order Full Number'
-                                                                                         ].strip())} \n{errores}\n"
+                            # Si falla comunicar la partida
+                            else:
+                                errores = "\n".join(
+                                    e["Descripcion"] for e in resp_partida["contenido"]["Errores"])
+                                mensaje += f"\nNo se ha creado la partida {n_ref(cab_partida['Order Full Number'
+                                                                                 ].strip())} \n{errores}\n"
 
-                                # Si existe la partida
-                                else:
-                                    ipda = query_existe_reply["contenido"][0]["ipda"]
-                                    mensaje += (f"\nExiste la partida {query_existe_reply['contenido'][0]['cpda']}, "
-                                                f"ref corresponsal: {n_ref(cab_partida['Order Full Number'].strip())}\n")
+                        # Si existe la partida
+                        else:
+                            ipda = query_existe_reply["contenido"][0]["ipda"]
+                            mensaje += (f"\nExiste la partida {query_existe_reply['contenido'][0]['cpda']}, "
+                                        f"ref corresponsal: {n_ref(cab_partida['Order Full Number'].strip())}\n")
 
-                            # Si no tiene expediente por primera vez
-                            else:  # self.local_work_pof_process not in n_path:
-                                # Marcamos el fichero para moverlo a process_pending
-                                self.files[file]["process_again"] = True
-                                # Asignamos el mensaje del correo
-                                self.files[file]["n_message"] = mensaje
+                    # Si no tiene expediente por primera vez
+                    else:  # self.local_work_pof_process not in n_path:
+                        # Marcamos el fichero para moverlo a process_pending
+                        self.files[file]["process_again"] = True
+                        # Asignamos el mensaje del correo
+                        self.files[file]["n_message"] = mensaje
 
-                            # Si no tiene expediente y es de repesca
-                            # else:
-                            # El fichero ya está en el path adecuado
-                            # Ya se envió correo
-                            # Asignamos el mensaje del correo
-                            # self.files[file]["n_message"] = mensaje
-                            # ...
+                    # Si no tiene expediente y es de repesca
+                    # else:
+                    # El fichero ya está en el path adecuado
+                    # Ya se envió correo
+                    # Asignamos el mensaje del correo
+                    # self.files[file]["n_message"] = mensaje
+                    # ...
 
-                        # No es cabecera y se ha encontrado expediente (LINEAS)
-                        elif encontrado_expediente:
-                            n_linea = bx.linea_arcese(fila)
+                # No es cabecera y se ha encontrado expediente (LINEAS)
+                elif encontrado_expediente:
+                    n_linea = bx.linea_xbs(fila)
 
-                            # Si tiene nº ipda (partida) y barcode (algún bulto)
-                            if ipda > 0 and n_linea["Barcode"].strip():
+                    # Si tiene nº ipda (partida) y barcode (algún bulto)
+                    if ipda > 0 and n_linea["Barcode"].strip():
 
-                                # Comprobamos que no existe ese bulto
-                                query_barcode = query = (f"SELECT COUNT(1) AS cuenta FROM ttemereti WHERE ipda={ipda} "
-                                                         f"AND dcodbar='{n_linea['Barcode'].strip()}'")
-                                query_barcode_reply = bm.n_consulta(query=query_barcode)
+                        # Comprobamos que no existe ese bulto
+                        query_barcode = query = (f"SELECT COUNT(1) AS cuenta FROM ttemereti WHERE ipda={ipda} "
+                                                 f"AND dcodbar='{n_linea['Barcode'].strip()}'")
+                        query_barcode_reply = bm.n_consulta(query=query_barcode)
 
-                                # Si no existe el bulto
-                                if not query_barcode_reply:
-                                    json_etiqueta = {
-                                        "codigobarras": n_linea["Barcode"].strip(),
-                                        "altura": float(n_linea["Hight"].strip()) / 100,
-                                        "ancho": float(n_linea["Width"].strip()) / 100,
-                                        "largo": float(n_linea["Lenght"].strip()) / 100,
-                                    }
-                                    #  Enchufamos el bulto
-                                    resp_etiqueta = bm.post_partida_etiqueta(id=ipda, data_json=json_etiqueta)
+                        # Si no existe el bulto
+                        if not query_barcode_reply:
+                            json_etiqueta = {
+                                "codigobarras": n_linea["Barcode"].strip(),
+                                "altura": float(n_linea["Hight"].strip()) / 100,
+                                "ancho": float(n_linea["Width"].strip()) / 100,
+                                "largo": float(n_linea["Lenght"].strip()) / 100,
+                            }
+                            #  Enchufamos el bulto
+                            resp_etiqueta = bm.post_partida_etiqueta(id=ipda, data_json=json_etiqueta)
 
-                                    # Actualizamos el emnsaje en función del resultado
-                                    if resp_etiqueta["cod_error"] == 201:
-                                        mensaje += f"Subida Etiqueta. {n_linea['Barcode'].strip()}\n\n"
-
-                                    else:
-                                        mensaje += (f"\nYa existe la etiqueta {n_linea['Barcode'].strip()} "
-                                                    f"de la "
-                                                    f"partida {cpda}")
-                                # Si existe el bulto
-                                else:
-                                    logging.info("Bulto encontrado")
+                            # Actualizamos el emnsaje en función del resultado
+                            if resp_etiqueta["cod_error"] == 201:
+                                mensaje += f"Subida Etiqueta. {n_linea['Barcode'].strip()}\n\n"
 
                             else:
-                                logging.info(f"No es cabecera, cpda: {cpda}, ipda: {ipda}, barcode: {n_linea['Barcode'].strip()}")
-                                ...
+                                mensaje += (f"\nYa existe la etiqueta {n_linea['Barcode'].strip()} "
+                                            f"de la "
+                                            f"partida {cpda}")
+                        # Si existe el bulto
+                        else:
+                            logging.info("Bulto encontrado")
 
-                    if not info["process_again"]:
-                        # ba.genera_json_bordero(path=f"{self.local_work_processed}/Bordero"
-                        #                         f"_{trip}{file}")
-                        bx.genera_json_bordero(path= self.local_work_processed / f"Bordero_{trip}{file}")
+                    else:
+                        logging.info(f"No es cabecera, cpda: {cpda}, ipda: {ipda}, barcode: {n_linea['Barcode'].strip()}")
+                        ...
 
-                info["success"] = True
-                info["n_message"] = mensaje
-                logger.info(f"Archivo procesado exitosamente {file}.")
-            except Exception as e:
-                info["success"] = False
-                mensaje += str(e)
-                info["n_message"] = mensaje
-                logger.error(f"\nError al procesar {file}: {e}\n")
-            # finally:
-                # logger.info("Procesamiento de archivo completado.")
+            if not info["process_again"]:
+                # ba.genera_json_bordero(path=f"{self.local_work_processed}/Bordero"
+                #                         f"_{trip}{file}")
+                bx.genera_json_bordero(path= self.local_work_processed / f"Bordero_{trip}{file}")
+
+        info["success"] = True
+        info["n_message"] = mensaje
+        logger.info(f"Archivo procesado exitosamente {file}.")
+        # except Exception as e:
+        #     info["success"] = False
+        #     mensaje += str(e)
+        #     info["n_message"] = mensaje
+        #     logger.error(f"\nError al procesar {file}: {e}\n")
+        # finally:
+            # logger.info("Procesamiento de archivo completado.")
 
 
         # Movemos los archivos a processed o process_pending según corresponda

@@ -24,8 +24,11 @@ base_dir = Path(__file__).resolve().parent
 load_dotenv(dotenv_path=base_dir.parent / "conf" / ".env.base")
 ENTORNO = os.getenv("ENTORNO")
 INTEGRATION_CUST = os.getenv("INTEGRATION_CUST")
+EMAIL_OURS = os.getenv("EMAIL_OURS")
 load_dotenv(dotenv_path=base_dir.parent / "conf" / f".env.{INTEGRATION_CUST}{ENTORNO}")
-logger.info(f"Cargando configuración: {INTEGRATION_CUST}{ENTORNO}")
+EMAIL_TO_ARC = os.getenv("EMAIL_TO_ARC")
+
+logger.info(f"Cargada configuración: {INTEGRATION_CUST}{ENTORNO}")
 
 
 class PartidaArcAne:
@@ -37,8 +40,11 @@ class PartidaArcAne:
         self.sftp_user = os.getenv("SFTP_USER_ARC")
         self.sftp_pw = os.getenv("SFTP_PW_ARC")
         self.sftp_port = os.getenv("SFTP_PORT_ARC")
+        # self.email_from = "integraciones@anexalogistica.com"
         self.email_from = "Arcese Partida"
-        self.email_to = ["javier@kpianalisis.com, dgorriz@anexalogistica.com, trafico2@anexalogistica.com"]
+        # self.email_to = ["javier@kpianalisis.com, dgorriz@anexalogistica.com, trafico2@trafico2@anexalogistica.com"]
+        self.email_to = [EMAIL_OURS, EMAIL_TO_ARC]
+        self.email_to += ["trafico2@anexalogistica.com"] if ENTORNO == "pro" else []
         self.remote_work_out_directory = os.getenv("SFTP_PDA_PATH_ARC")
         self.local_work_directory = self.base_path.parent / "fixtures" / "arc" / "edi"
         self.local_work_pof_process = self.local_work_directory / "process_pending"
@@ -294,9 +300,9 @@ class PartidaArcAne:
         # Movemos los archivos a processed o process_pending según corresponda
         # Enviamos los correos
         for file, info in self.files.items():
-        #     # Enviamos los correos
-        #     email_sender.send_email(from_addrs=self.email_from, to_addrs=self.email_to,
-        #                             subject=f"Arcese Subir partida {info["expediente"]}", body=info["n_message"])
+            # Enviamos los correos
+            email_sender.send_email(from_addr=self.email_from, to_addrs=self.email_to,
+                                    subject=f"Arcese Subir partida {info["expediente"]}", body=info["n_message"])
             # Movemos a las carpetas según el resultado del proceso
             if info["process_again"]:
                 os.rename(info["path"], f"{self.local_work_pof_process / file}")
@@ -310,7 +316,7 @@ class PartidaArcAne:
         self.enc_exp = False
         mensaje = ""
 
-        #eliminar al descomentar comunicar la partida
+        # Eliminar al descomentar comunicar la partida
         ipda = 0
         cpda = ""
 
@@ -338,7 +344,6 @@ class PartidaArcAne:
             if not query_existe_reply["contenido"]:
                 logging.debug(f" --- Hemos de comunicar la partida {n_ref(cab_partida['Order Full Number'
                                                                           ].strip())}")
-                """
                 resp_partida = self.bm.post_partida(data_json=pda_json_arc)
 
                 # Si exito al comunicar la partida
@@ -356,7 +361,6 @@ class PartidaArcAne:
                                                                      ].strip())} \n{errores}\n"
                     logging.debug(logging.debug(f" --- No se ha creado la partida {n_ref(cab_partida['Order Full Number'
                                                                      ].strip())} \n{errores}\n"))
-                """
 
             # Si existe la partida
             else:
@@ -430,7 +434,7 @@ class PartidaArcAne:
         # Procesamos los recién descargados del FTP
         logger.info(" --- Iniciando proceso de archivos descargados")
         logger.info(" --- Descargando nuevos archivos")
-        # self.download_files()
+        self.download_files()
         self.files = self.load_dir_files()
         if self.files:
             self.files_process(self.local_work_directory)

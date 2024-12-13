@@ -10,43 +10,38 @@ class BorderoXBS:
     def __init__(self):
         self.bordero = {"partidas": []}
         self.cabecera = {}
-        self.a00 = {}
         self.line = {}
 
     def cabecera_xbs(self, fila):
-        cabecera = {"Lineas": []}
-
-        print(fila[:11])
-        # if fila[:11] == "@@PHBORD512":  # Mensaje tipo estado
-        #     cabecera["header"] = fila  # Por el momento no tiene valor desagregar la línea
-        if fila[:3] == "A00":  # cabecera
-            cabecera = {
-                "record_type_a00": fila[0:3],
-                "data_type_qualifier": fila[4:6],
-                "release_version": fila[7:9],
-                "waybill_number": fila[10:44],
-                "waybill_date": fila[45:52],
-                "transport_type": fila[53:55],
-                "product": fila[56:58],
-                "code_list_(cooperation)": fila[59:61],
-                "currency": fila[62:64],
-                "identification_of_waybill_consignor": fila[65:99],
-                "identification_of_waybill_consignee": fila[100:134],
-                "freight_operator": fila[135:169],
-                "freight_operator_country": fila[170:172],
-                "freight_operator_postcode": fila[173:181],
-                "freight_operator_town": fila[182:216],
-                "vehicle_license_number_1": fila[217:251],
-                "vehicle_license_number_2": fila[252:286],
-                "routing_id_1": fila[287:321],
-                "routing_id_2": fila[322:356],
-                "lineas": []
-            }
-            self.cabecera = cabecera
-            return cabecera
+        cabecera = {
+            "record_type_a00": fila[0:3],
+            "data_type_qualifier": fila[4:6],
+            "release_version": fila[7:9],
+            "waybill_number": fila[10:44],
+            "waybill_date": fila[45:52],
+            "transport_type": fila[53:55],
+            "product": fila[56:58],
+            "code_list_(cooperation)": fila[59:61],
+            "currency": fila[62:64],
+            "identification_of_waybill_consignor": fila[65:99],
+            "identification_of_waybill_consignee": fila[100:134],
+            "freight_operator": fila[135:169],
+            "freight_operator_country": fila[170:172],
+            "freight_operator_postcode": fila[173:181],
+            "freight_operator_town": fila[182:216],
+            "vehicle_license_number_1": fila[217:251],
+            "vehicle_license_number_2": fila[252:286],
+            "routing_id_1": fila[287:321],
+            "routing_id_2": fila[322:356],
+            "lines": []
+        }
+        self.bordero["partidas"].append(cabecera)
+        self.cabecera = cabecera
+        return cabecera
 
 
-    def lineeas_xbs(self, fila):
+
+    def linea_xbs(self, fila):
 
         if fila[:3] == "A10":  # linea
             linea = {
@@ -308,10 +303,9 @@ class BorderoXBS:
                 "service_10": fila[124:126],
                 "tax_code_10": fila[127:127],
                 "amount_10": fila[128:136],
-
             }
 
-        if fila[:3] == "j00":  # linea
+        if fila[:3] == "J00":  # linea
             linea = {
                 "record_type_j00": fila[1:3],
                 "total_number_of_consignments": fila[4:6],
@@ -329,7 +323,7 @@ class BorderoXBS:
                 "totas_of_value_added_tax": fila[93:103],
             }
 
-        if fila[:3] == "z00":  # linea
+        if fila[:3] == "Z00":  # linea
             linea = {
                 "record_type_z00": fila[1:3],
                 "total_number_of_data_records": fila[4:9],
@@ -342,6 +336,12 @@ class BorderoXBS:
                 'Record type@@PT': fila[:4],
                 'Empty record': fila[4:128],
             }
+
+        # for i in range(len(self.bordero["partidas"])):
+        #     if self.bordero["partidas"][i]["waybill_number"]==linea["waybill_number"]:
+        #          self.bordero["partidas"][i]["lines"].append(linea)
+        self.bordero["partidas"][0]["lines"].append(linea)
+        self.linea=linea
         return linea
 
 
