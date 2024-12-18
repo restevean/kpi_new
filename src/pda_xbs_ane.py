@@ -80,13 +80,12 @@ class PartidaXbsAne:
             logger.debug(f" --- Accediendo al directorio remoto: {self.remote_work_out_directory}")
             n_ftp.change_directory(self.remote_work_out_directory)
             archivos_remotos = n_ftp.ftp.nlst()
-            # TODO ojo, los archivos deben contener 'BOLLE' en el nombre. O nombramos de alguna manera los archivos o
-            #  los los descargamos de una carpeta específica para estado-partida.
-            # archivos_filtrados = [
-            #     file for file in archivos_remotos
-            #     if 'BOLLE' in file.upper() and (n_ftp.sftp.stat(file).st_mode & 0o170000 == 0o100000)
-            # ]
-            archivos_filtrados = archivos_remotos
+            # TODO Ojo!, los archivos deben contener 'BORD512' en el nombre.
+            archivos_filtrados = [
+                file for file in archivos_remotos
+                if 'BORD512' in file.upper() and (n_ftp.sftp.stat(file).st_mode & 0o170000 == 0o100000)
+            ]
+            # archivos_filtrados = archivos_remotos
 
             if not archivos_filtrados:
                 logger.info(" --- No se encontraron para descargar.")
@@ -120,58 +119,66 @@ class PartidaXbsAne:
             file_path = os.path.join(n_path, file)
             info['path'] = file_path
 
-            # try:
-            logger.info(f" --- Procesando archivo: {file_path}")
+            try:
+                logger.info(f" --- Procesando archivo: {file_path}")
 
-            with open(file_path, 'rt') as archivo:
-                ipda = 0
-                cpda = ""
-                bx = BorderoXBS()
-                trip = ""
+                with open(file_path, 'rt') as archivo:
+                    ipda = 0
+                    cpda = ""
+                    # bx = BorderoXBS()
+                    trip = ""
 
-            # Nos leemos el archivo entero antes de procesarlo y generamos el json
-            #     for fila in archivo:
-            #         if fila[:4] == '@@PH':
-            #             continue
-            #         elif fila[:3] == 'A00':
-            #             cab_partida = bx.cabecera_xbs(fila=fila)
-            #         else:
-            #             n_linea = bx.linea_xbs(fila)
-            #
-            #     trip = bx.expediente_ref_cor()
-            #     bx.genera_json_bordero(path= self.local_work_processed / f"Bordero_{trip}{file}")
+                    # Nos leemos el archivo entero antes de procesarlo y generamos el json
+                    for fila in archivo:
+                        if fila[:4] == '@@PH':
+                            continue
+                        elif fila[:3] == 'A00':
+                            cab_partida = self.bx.cabecera_xbs(fila=fila)
+                        else:
+                            n_linea = self.bx.linea_xbs(fila)
 
-            # Procesamos la fila
-            for fila in archivo:
-                # Si es cabecera
-                if fila[:3] == 'A00':
+                    trip = self.bx.expediente_ref_cor()
+                    # self.bx.genera_json_bordero(path= self.local_work_processed / f"Bordero_{trip}:{file}")
+                    self.bx.genera_json_bordero(path= self.local_work_processed / file)
+                    archivo.seek(0)
 
-                    # Por claridad procesamos la cabecera en un method
-                    process_header_data = self.header_process(self, fila, info)
-                    ipda = process_header_data[0]
-                    cpda = process_header_data[1]
-                    info = process_header_data[2]
-                    trip = process_header_data[3]
+                    # Procesamos la fila
+                    for fila in archivo:
 
-                # No es cabecera y se ha encontrado expediente (LINEAS)
-                elif encontrado_expediente:
+                        if fila[:11] == '@@PHBORD100':
+                            continue
+                        # Si es cabecera
+                        if fila[:3] == 'A00':
 
-                    # Por claridad procesamos la línea en un method
-                    self.line_process(fila, ipda, cpda, info)
+                            # Por claridad procesamos la cabecera en un method
+                            process_header_data = self.header_process(file, fila, info)
+                            ipda = process_header_data[0]
+                            cpda = process_header_data[1]
+                            info = process_header_data[2]
+                            trip = process_header_data[3]
 
-            if not info["process_again"]:
-                bx.genera_json_bordero(path= self.local_work_processed / f"Bordero_{trip}{file}")
+                        if not encontrado_expediente:
+                            break
 
-        info["success"] = True
-        info["n_message"] = mensaje
-        logger.info(f"Archivo procesado exitosamente {file}.")
-        # except Exception as e:
-        #     info["success"] = False
-        #     mensaje += str(e)
-        #     info["n_message"] = mensaje
-        #     logger.error(f"\nError al procesar {file}: {e}\n")
-        # finally:
-            # logger.info("Procesamiento de archivo completado.")
+                        # No es cabecera y se ha encontrado expediente (LINEAS)
+                        elif encontrado_expediente:
+
+                            # Por claridad procesamos la línea en un method
+                            self.line_process(fila, ipda, cpda, info)
+
+                    if not info["process_again"]:
+                        self.bx.genera_json_bordero(path= self.local_work_processed / f"Bordero_{trip}{file}")
+
+                info["success"] = True
+                info["n_message"] = mensaje
+                logger.info(f"Archivo procesado exitosamente {file}.")
+            except Exception as e:
+                info["success"] = False
+                mensaje += str(e)
+                info["n_message"] = mensaje
+                logger.error(f"\nError al procesar {file}: {e}\n")
+            finally:
+                logger.info("Procesamiento de archivo completado.")
 
 
         # Movemos los archivos a processed o process_pending según corresponda
@@ -181,11 +188,13 @@ class PartidaXbsAne:
             # Movemos a las carpetas según el resultado del proceso
             if info["process_again"]:
                 os.rename(info["path"], f"{self.local_work_pof_process / file}")
+                os.rename(self.local_work_processed / f"{file}_Bordero{trip}.json", self.local_work_pof_process /
+                          f"{file}_Bordero{trip}.json")
             else:
                 os.rename(info["path"], f"{self.local_work_processed / file}")
 
 
-    def header_process(self, row, info):
+    def header_process(self, file, row, info):
         logging.info(f" --- Cabecera: \n --- {row}")
         cab_partida = self.bx.cabecera_xbs(fila=row)
         trip = self.bx.expediente_ref_cor()  # 2024MO12103
@@ -250,6 +259,8 @@ class PartidaXbsAne:
 
         # No existe el expediente (la consulta no tiene contenido)
         else:
+            info["process_again"] = True
+            # self.bx.genera_json_bordero(path= self.local_work_processed / f"Bordero_{trip}{file}")
             mensaje += f"\n No existe el expediente {trip} {n_ref(trip)}"
 
         # Almacenamos el mensaje y retornamos
@@ -301,20 +312,20 @@ class PartidaXbsAne:
 
         # Nos ocupamos primero de los descargados antes y sin iexp/cexp
         logger.info("\nIniciando proceso de archivos que estaban pendientes de procesar")
-        pda_xbs = PartidaXbsAne()
-        pda_xbs.files = self.load_dir_files(self.local_work_pof_process)
-        if pda_xbs.files:
-            # pda_xbs.files_process(self.local_work_pof_process)
+        # pda_xbs = PartidaXbsAne()
+        self.load_dir_files(self.local_work_pof_process)
+        if self.files:
+            # self.files_process(self.local_work_pof_process)
             logging.info("Procesados los archivos que estaban pendientes de procesar")
 
         # Procesamos los recién descargados del FTP
         logger.info("\nIniciando proceso de archivos descargados")
-        pda_xbs.download_files()
-        # pda_xbs.files = None
-        # pda_xbs.files = self.load_dir_files(self.local_work_directory)
-        pda_xbs.files = self.load_dir_files()
-        if pda_xbs.files:
-            pda_xbs.files_process(self.local_work_directory)
+        self.download_files()
+        # self.files = None
+        # self.files = self.load_dir_files(self.local_work_directory)
+        self.files = self.load_dir_files()
+        if self.files:
+            self.files_process(self.local_work_directory)
             logging.info("Procesados los archivos descargados de FTP")
 
 

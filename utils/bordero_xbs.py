@@ -8,58 +8,62 @@ logger = logging.getLogger(__name__)
 class BorderoXBS:
 
     def __init__(self):
-        self.bordero = {"partidas": []}
-        self.cabecera = {}
-        self.line = {}
+        self.bordero = {"expediente": {"partidas": []}}
+        self.partidas = []
+        self.level_1 = {}
+        self.level_2 = {}
+        self.level_3 = {}
+        self.level_4 = {}
 
-    def cabecera_xbs(self, fila):
-        cabecera = {
-            "record_type_a00": fila[0:3],
-            "data_type_qualifier": fila[4:6],
-            "release_version": fila[7:9],
-            "waybill_number": fila[10:44],
-            "waybill_date": fila[45:52],
-            "transport_type": fila[53:55],
-            "product": fila[56:58],
-            "code_list_(cooperation)": fila[59:61],
-            "currency": fila[62:64],
-            "identification_of_waybill_consignor": fila[65:99],
-            "identification_of_waybill_consignee": fila[100:134],
-            "freight_operator": fila[135:169],
-            "freight_operator_country": fila[170:172],
-            "freight_operator_postcode": fila[173:181],
-            "freight_operator_town": fila[182:216],
-            "vehicle_license_number_1": fila[217:251],
-            "vehicle_license_number_2": fila[252:286],
-            "routing_id_1": fila[287:321],
-            "routing_id_2": fila[322:356],
-            "lines": []
-        }
-        self.bordero["partidas"].append(cabecera)
-        self.cabecera = cabecera
-        return cabecera
-
-
-
-    def linea_xbs(self, fila):
-
-        if fila[:3] == "A10":  # linea
-            linea = {
-                "record_type_a10": fila[0:3],
-                "loading_units_no._1_(lui)": fila[4:38],
-                "lead_seal_number_1_for_lu": fila[39:73],
-                "lead_seal_number_2_for_lu": fila[74:108],
-                "lead_seal_number_3_for_l": fila[109:143],
-                "lead_seal_number_4_for_lu": fila[144:178],
-                "loading_units_no._2_(lu2)": fila[179:213],
-                "lead_seal_number_1_for_lu_2": fila[214:248],
-                "lead_seal_number_2_for_lu_2": fila[249:283],
-                "lead_seal_number_3_for_lu_2": fila[284:318],
-                "lead_seal_number_4_for_lu_2": fila[319:353],
+    def level_1_xbs(self, fila): # Expediente
+        level_1 = {"partidas": []}
+        if fila[:3] == 'A00':
+            level_1 = {
+                "record_type_a00": fila[0:3],
+                "data_type_qualifier": fila[3:6],
+                "release_version": fila[6:9],
+                "waybill_number": fila[9:44],
+                "waybill_date": fila[44:52],
+                "transport_type": fila[52:55],
+                "product": fila[55:58],
+                "code_list_(cooperation)": fila[58:61],
+                "currency": fila[61:64],
+                "identification_of_waybill_consignor": fila[64:99],
+                "identification_of_waybill_consignee": fila[99:134],
+                "freight_operator": fila[134:169],
+                "freight_operator_country": fila[169:172],
+                "freight_operator_postcode": fila[172:181],
+                "freight_operator_town": fila[181:216],
+                "vehicle_license_number_1": fila[216:251],
+                "vehicle_license_number_2": fila[251:286],
+                "routing_id_1": fila[286:321],
+                "routing_id_2": fila[321:356],
+                "Partidas": []
             }
+        if fila[:3] == "A10":
+            level_1 = {
+                "record_type_a10": fila[0:3],
+                "loading_units_no._1_(lui)": fila[3:38],
+                "lead_seal_number_1_for_lu_1": fila[38:73],
+                "lead_seal_number_2_for_lu_1": fila[73:108],
+                "lead_seal_number_3_for_lu_1": fila[108:143],
+                "lead_seal_number_4_for_lu_1": fila[143:178],
+                "loading_units_no._2_(lu2)": fila[178:213],
+                "lead_seal_number_1_for_lu_2": fila[213:248],
+                "lead_seal_number_2_for_lu_2": fila[248:283],
+                "lead_seal_number_3_for_lu_2": fila[283:318],
+                "lead_seal_number_4_for_lu_2": fila[318:353],
+            }
+        self.bordero["expediente"].append(level_1)
+        self.level_1 = level_1
+        return level_1
 
-        if fila[:3] == "B00":  # linea
-            linea = {
+
+
+    def level_2_xbs(self, fila): # Partidas
+        level_2 = {"bultos": []}
+        if fila[:3] == "B00":
+            level_2 = {
                 "record_type_b00": fila[0:3],
                 "sequential_waybill_item": fila[4:6],
                 "qualifier_(address_type)": fila[7:9],
@@ -76,143 +80,49 @@ class BorderoXBS:
                 "customs_id": fila[302:336],
             }
 
-        if fila[:3] == "B10":  # linea
-            linea = {
+        if fila[:3] == "B10":  # Bultos
+            level_2 = {
                 "record_type_b10": fila[0:3],
-                "sequential_waybill_item": fila[4:6],
-                "communication_type_qualifier": fila[7:9],
-                "content_of_communication": fila[10:265],
+                "sequential_waybill_item": fila[3:6],
+                "communication_type_qualifier": fila[6:9],
+                "content_of_communication": fila[9:265],
             }
 
-        if fila[:3] == "C00":  # linea
-            linea = {
+        if fila[:3] == "C00":
+            level_2 = {
                 "recorde_c00": fila[0:3],
-                "se_uential_wa_bill_item": fila[4:6],
-                "dua_ment": fila[7:9],
-                "customs_procedure": fila[10:13],
-                "customs_office": fila[14:21],
-                "country_of_origin1": fila[22:24],
-                "country_of_origin2": fila[25:27],
+                "se_uential_wa_bill_item": fila[3:6],
+                "dua_ment": fila[6:9],
+                "customs_procedure": fila[9:13],
+                "customs_office": fila[13:21],
+                "country_of_origin1": fila[21:24],
+                "country_of_origin2": fila[24:27],
                 "consignor_country": fila[28:30],
-                "destination_country": fila[31:33],
-                "destination_land_federal_state": fila[34:36],
-                "country_of_importer": fila[37:39],
-                "statistics_status": fila[40:42],
-                "point_of_delivery_(delivery_term_town)": fila[43:77],
+                "destination_country": fila[30:33],
+                "destination_land_federal_state": fila[33:36],
+                "country_of_importer": fila[36:39],
+                "statistics_status": fila[39:42],
+                "point_of_delivery_(delivery_term_town)": fila[42:77],
                 "transit_value": fila[78:86],
-                "currency_of_transit_value": fila[87:89],
-                "business_type": fila[90:92],
-                "mode_of_trans_ort_to_border": fila[93:95],
-                "domestic_mode_of_trans": fila[96:98],
-                "customs_office_of_entry": fila[99:106],
-                "preceding_document_type": fila[107:116],
-                "preceding_document_number": fila[117:141],
-                "appendix_type_01": fila[142:147],
-                "appendix_number_01": fila[148:167],
-                "appendix_date_01": fila[168:175],
-                "appendix_type_02": fila[176:181],
-                "appendix_number_02": fila[182:201],
-                "appendix_date_02": fila[202:209],
-                "appendix_type_03": fila[210:215],
-                "appendix_number_03": fila[216:235],
-                "appendix_date_03": fila[236:243],
+                "currency_of_transit_value": fila[86:89],
+                "business_type": fila[89:92],
+                "mode_of_trans_ort_to_border": fila[92:95],
+                "domestic_mode_of_trans": fila[95:98],
+                "customs_office_of_entry": fila[98:106],
+                "preceding_document_type": fila[106:116],
+                "preceding_document_number": fila[116:141],
+                "appendix_type_01": fila[141:147],
+                "appendix_number_01": fila[147:167],
+                "appendix_date_01": fila[167:175],
+                "appendix_type_02": fila[175:181],
+                "appendix_number_02": fila[181:201],
+                "appendix_date_02": fila[201:209],
+                "appendix_type_03": fila[209:215],
+                "appendix_number_03": fila[215:235],
+                "appendix_date_03": fila[235:243],
             }
-
-        if fila[:3] == "D00":  # linea
-            linea = {
-                "record_type_d00": fila[1:3],
-                "sequential_waybill_item": fila[4:6],
-                "cons_nnent": fila[7:9],
-                "num_err_of": fila[10:13],
-                "pack": fila[14:16],
-                "number_of_packages_on,'in_pales": fila[17:20],
-                "pa": fila[21:23],
-                "content_of": fila[24:58],
-                "code_and_nun-oer": fila[59:93],
-                "actual_weight": fila[94:102],
-                "chargeable_weight": fila[103:111],
-                "lenght_in_meters": fila[112:115],
-                "width_in_meters": fila[116:119],
-                "heigth_in_rneters": fila[120:123],
-                "cubicmeters": fila[124:128],
-                "loading_ræters": fila[129:131],
-                "number_of_locations": fila[132:135],
-            }
-
-        if fila[:3] == "D10":  # linea
-            linea = {
-                "record_type_d10": fila[1:3],
-                "sequential_waybill_item": fila[4:6],
-                "consignment_position": fila[7:9],
-                "product_number": fila[10:24],
-                "country_of_origin": fila[25:27],
-                "raw_mass_in_kg": fila[28:36],
-                "fixed_load_in_kg": fila[37:45],
-                "procedure_code": fila[46:50],
-                "customs_value": fila[51:61],
-                "currency_of_customs_value": fila[62:64],
-                "statistical_value": fila[65:75],
-                "currency_of_statistical_value": fila[76:78],
-                "appendix_type_01": fila[79:84],
-                "appendix_number_01": fila[85:104],
-                "appendix_date_01": fila[105:112],
-                "appendix_type_02": fila[113:118],
-                "appendix_number_02": fila[119:138],
-                "appendix_date_02": fila[139:146],
-                "appendix_type_03": fila[147:152],
-                "appendix_number_03": fila[153:172],
-                "appendix_date_03": fila[173:180],
-                "appendix_type_04": fila[181:186],
-                "appendix_number_04": fila[187:206],
-                "appendix_date_04": fila[207:214],
-            }
-
-        if fila[:3] == "E00":  # linea
-            linea = {
-                "record_type_e00": fila[1:3],
-                "sequential_waybill_item": fila[4:6],
-                "consignment_position": fila[7:9],
-                "gg_release": fila[10:12],
-                "number_of_packages": fila[13:16],
-                "gross_weight_in_kg": fila[17:25],
-                "un_number": fila[26:],
-                "description_of_packaging": fila[30:64],
-                "multiplie": fila[65:68],
-                "gg_database_id": fila[69:71],
-                "unique_key": fila[72:81],
-                "material_name/dangerous_goods_description": fila[82:291],
-                "additional_text_for_n.a.g.": fila[292:361],
-                "dangerous_goods_sample": fila[362:364],
-                "dangerous_goods_sample_1": fila[365:367],
-                "dangerous_goods_sample_2": fila[368:370],
-                "dangerous_goods_sample_3": fila[371:373],
-                "packaging_group/classification_code": fila[374:377],
-                "net_explosive_mass_in_kg": fila[378:386],
-                "transport_class": fila[387:387],
-                "limited_amount_lq_yn": fila[388:388],
-                "calculated_dangerous_goods_points": fila[389:397],
-            }
-
-        if fila[:3] == "F00":  # linea
-            linea = {
-                "record_type_f00": fila[1:3],
-                "sequential_waybill_item": fila[4:6],
-                "consignment_position": fila[7:9],
-                "barcode": fila[10:44],
-                "reference_qualifier": fila[45:47],
-                "reference_number": fila[48:82],
-                "reference_qualifier_1": fila[83:85],
-                "reference_number_1": fila[86:120],
-                "reference_qualifier_2": fila[121:123],
-                "reference_number_2": fila[124:158],
-                "reference_qualifier_3": fila[159:161],
-                "reference_number_3": fila[162:196],
-                "reference_qualifier_4": fila[197:199],
-                "reference_number_4": fila[200:234],
-            }
-
         if fila[:3] == "G00":  # linea
-            linea = {
+            level_2 = {
                 "record_type_g00": fila[1:3],
                 "sequential_waybill_item": fila[4:6],
                 "consignment_number_sending_depot": fila[7:41],
@@ -240,7 +150,7 @@ class BorderoXBS:
             }
 
         if fila[:3] == "H00":  # linea
-            linea = {
+            level_2 = {
                 "record_type_h00": fila[1:3],
                 "sequential_waybill_item": fila[4:6],
                 "text_code_1": fila[7:9],
@@ -258,7 +168,7 @@ class BorderoXBS:
             }
 
         if fila[:3] == "H10":  # linea
-            linea = {
+            level_2 = {
                 "record_type_h10": fila[:3],
                 "sequential_waybill_item": fila[4:6],
                 "qualifier_for_text_usage_1": fila[7:9],
@@ -270,9 +180,9 @@ class BorderoXBS:
             }
 
         if fila[:3] == "I00":  # linea
-            linea = {
+            level_2 = {
                 "record_type_i00": fila[1:3],
-                "se_uential": fila[4:6],
+                "sequential": fila[4:6],
                 "service_1": fila[7:9],
                 "tax_code": fila[10:10],
                 "amount_1": fila[11:10],
@@ -305,8 +215,112 @@ class BorderoXBS:
                 "amount_10": fila[128:136],
             }
 
+        self.bordero["expediente"]["partidas"].append(level_2)
+        self.level_2 = level_2
+        return level_2
+
+
+
+
+    def level_3_xbs(self, fila):
+        if fila[:3] == "D00":
+            level_3 = {
+                "record_type_d00": fila[1:3],
+                "sequential_waybill_item": fila[4:6],
+                "cons_nnent": fila[7:9],
+                "num_err_of": fila[10:13],
+                "pack": fila[14:16],
+                "number_of_packages_on,'in_pales": fila[17:20],
+                "pa": fila[21:23],
+                "content_of": fila[24:58],
+                "code_and_nun-oer": fila[59:93],
+                "actual_weight": fila[94:102],
+                "chargeable_weight": fila[103:111],
+                "lenght_in_meters": fila[112:115],
+                "width_in_meters": fila[116:119],
+                "heigth_in_rneters": fila[120:123],
+                "cubicmeters": fila[124:128],
+                "loading_ræters": fila[129:131],
+                "number_of_locations": fila[132:135],
+            }
+
+
+    def level_4_xbs(self, fila):
+        if fila[:3] == "D10":  # linea
+            level_3 = {
+                "record_type_d10": fila[1:3],
+                "sequential_waybill_item": fila[4:6],
+                "consignment_position": fila[7:9],
+                "product_number": fila[10:24],
+                "country_of_origin": fila[25:27],
+                "raw_mass_in_kg": fila[28:36],
+                "fixed_load_in_kg": fila[37:45],
+                "procedure_code": fila[46:50],
+                "customs_value": fila[51:61],
+                "currency_of_customs_value": fila[62:64],
+                "statistical_value": fila[65:75],
+                "currency_of_statistical_value": fila[76:78],
+                "appendix_type_01": fila[79:84],
+                "appendix_number_01": fila[85:104],
+                "appendix_date_01": fila[105:112],
+                "appendix_type_02": fila[113:118],
+                "appendix_number_02": fila[119:138],
+                "appendix_date_02": fila[139:146],
+                "appendix_type_03": fila[147:152],
+                "appendix_number_03": fila[153:172],
+                "appendix_date_03": fila[173:180],
+                "appendix_type_04": fila[181:186],
+                "appendix_number_04": fila[187:206],
+                "appendix_date_04": fila[207:214],
+            }
+
+        if fila[:3] == "E00":  # linea
+            level_3 = {
+                "record_type_e00": fila[1:3],
+                "sequential_waybill_item": fila[4:6],
+                "consignment_position": fila[7:9],
+                "gg_release": fila[10:12],
+                "number_of_packages": fila[13:16],
+                "gross_weight_in_kg": fila[17:25],
+                "un_number": fila[26:],
+                "description_of_packaging": fila[30:64],
+                "multiplie": fila[65:68],
+                "gg_database_id": fila[69:71],
+                "unique_key": fila[72:81],
+                "material_name/dangerous_goods_description": fila[82:291],
+                "additional_text_for_n.a.g.": fila[292:361],
+                "dangerous_goods_sample": fila[362:364],
+                "dangerous_goods_sample_1": fila[365:367],
+                "dangerous_goods_sample_2": fila[368:370],
+                "dangerous_goods_sample_3": fila[371:373],
+                "packaging_group/classification_code": fila[374:377],
+                "net_explosive_mass_in_kg": fila[378:386],
+                "transport_class": fila[387:387],
+                "limited_amount_lq_yn": fila[388:388],
+                "calculated_dangerous_goods_points": fila[389:397],
+            }
+
+        if fila[:3] == "F00":  # linea
+            level_3 = {
+                "record_type_f00": fila[1:3],
+                "sequential_waybill_item": fila[4:6],
+                "consignment_position": fila[7:9],
+                "barcode": fila[10:44],
+                "reference_qualifier": fila[45:47],
+                "reference_number": fila[48:82],
+                "reference_qualifier_1": fila[83:85],
+                "reference_number_1": fila[86:120],
+                "reference_qualifier_2": fila[121:123],
+                "reference_number_2": fila[124:158],
+                "reference_qualifier_3": fila[159:161],
+                "reference_number_3": fila[162:196],
+                "reference_qualifier_4": fila[197:199],
+                "reference_number_4": fila[200:234],
+            }
+
+
         if fila[:3] == "J00":  # linea
-            linea = {
+            level_3 = {
                 "record_type_j00": fila[1:3],
                 "total_number_of_consignments": fila[4:6],
                 "total_number_of_packages": fila[7:12],
@@ -324,7 +338,7 @@ class BorderoXBS:
             }
 
         if fila[:3] == "Z00":  # linea
-            linea = {
+            level_3 = {
                 "record_type_z00": fila[1:3],
                 "total_number_of_data_records": fila[4:9],
                 "date_of_creation": fila[10:17],
@@ -332,7 +346,7 @@ class BorderoXBS:
             }
 
         if fila[:4] == "@@PT":  # linea
-            linea = {
+            level_3 = {
                 'Record type@@PT': fila[:4],
                 'Empty record': fila[4:128],
             }

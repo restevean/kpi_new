@@ -71,16 +71,16 @@ def convertir_a_utf8(ruta_entrada, ruta_salida):
 if __name__ == "__main__":
 
     # Comprobar la codificación
-    codificacion, detalle = comprobar_codificacion(file_dir / "ExampleEDI.txt")
+    codificacion, detalle = comprobar_codificacion(file_dir / "BORD512_1ES24ET1865_31148_16122024-152903.txt")
     if codificacion == 'utf_8':
-        print(f"El archivo {file_dir / "ExampleEDI.txt"} está codificado en UTF-8.")
+        print(f"El archivo {file_dir / "BORD512_1ES24ET1865_31148_16122024-152903.txt"} está codificado en UTF-8.")
     else:
-        print(f"El archivo {file_dir / "ExampleEDI.txt"} no está en UTF-8, está en {codificacion}.")
+        print(f"El archivo {file_dir / "BORD512_1ES24ET1865_31148_16122024-152903.txt"} no está en UTF-8, está en {codificacion}.")
 
 
     # Convertirlo a UTF-8
-    ruta_entrada = file_dir / "ExampleEDI.txt"
-    ruta_salida = file_dir / "ExampleEDI_utf-8.txt"
+    ruta_entrada = file_dir / "BORD512_1ES24ET1865_31148_16122024-152903.txt"
+    ruta_salida = file_dir / "bor_xbs.txt"
 
     try:
         convertir_a_utf8(ruta_entrada, ruta_salida)

@@ -1,0 +1,20 @@
+@@PHBORD100
+A00STD1001ES24ET1865                        16122024L  CL CL EURXBSOPO                             ANEXA_VAL                          TRANSPORTES SA LDA                 PT 3130-430 VINHA DA RAINHA                    CN-643-ZL                          
+A101                                  
+B00001SHPMAIUSCULO MERIDIANO UNIPESSOAL LDA RUA DA ALEGRIA 213 R/C ESQ         PT 4480-743 VILA DO CONDE                      
+B00001CONVENDING MOGORT SL                  Cantalot.7                         ES 46760    Tavernes de la Valldigna           
+D000010010004EP 0000   ACESSORIOS / ACCESSORIES                                              000800000000000000012000800220084480000000
+F00001001TE-243087-003
+F00001001TE-243087-004
+F00001001TE-243087-002
+F00001001TE-243087-001
+G00001243087                             00080000064 N0000000000000000                                                                                                               00100000000000   00000000008448000000000   00    00000000
+B00002SHPNIBBLE ENGENHARIA LDA              Rua de Júlio Dinis 265             PT 4785-330 TROFA                              
+B00002CONACTIVI SEGURIDAD Y SISTEMAS, S.L.  CALLE ESLOVENIA 14                 ES 46200    PAIPORTA                           
+D000020010001EP 0000   ACESSORIOS / ACCESSORIES                                              000060000000000000008000600080003840000000
+F00002001TE-241941-001
+G00002241941                             00006000002 N0000000000000000                                                                                                               00100000000000   00000000000384000000000   00    00000000
+H00002503ANEXA_VAL 31148                    
+J000020000050008600000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+Z0000001716122024152903
+@@PT
