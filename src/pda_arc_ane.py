@@ -297,7 +297,7 @@ class PartidaArcAne:
                 mensaje += str(e)
                 logger.error(f" --- Error al procesar {file}: {e}\n")
 
-        # Movemos los archivos a processed o process_pending según corresponda
+        # Movemos los archivos a processed o process_pending según correspondal
         # Enviamos los correos
         for file, info in self.files.items():
             # Enviamos los correos
@@ -353,6 +353,9 @@ class PartidaArcAne:
                     mensaje += f"\nCreada partida {resp_partida['contenido']['codigo']}"
                     logging.debug(f" --- Creada partida {resp_partida['contenido']['codigo']}")
 
+
+
+
                 # Si falla comunicar la partida
                 else:
                     errores = "\n".join(
@@ -393,17 +396,17 @@ class PartidaArcAne:
             query_barcode_reply = self.bm.n_consulta(query=query_barcode)
 
             # Si no existe barcode (el bulto)
-            if not query_barcode_reply:
+            if query_barcode_reply["contenido"][0]["cuenta"]==0:
                 json_etiqueta = {
                     "codigobarras": n_row["Barcode"].strip(),
-                    "altura": float(n_row["Hight"].strip()) / 100,
-                    "ancho": float(n_row["Width"].strip()) / 100,
-                    "largo": float(n_row["Lenght"].strip()) / 100,
+                    "altura": float(n_row["Height"].strip()) / 100 if n_row["Height"]!='' else 0.0,
+                    "ancho": float(n_row["Width"].strip()) / 100 if n_row["Width"]!='' else 0.0,
+                    "largo": float(n_row["Length"].strip()) / 100 if n_row["Length"]!='' else 0.0,
                 }
                 #  Añadimos el bulto
-                resp_etiqueta = self.bm.post_partida_etiqueta(id=ipda, data_json=json_etiqueta)
+                resp_etiqueta = self.bm.post_partida_etiqueta(paet_id=ipda, data_json=json_etiqueta)
                 # Actualizamos el mensaje en función del resultado
-                if resp_etiqueta["cod_error"] == 201:
+                if resp_etiqueta["status_code"] == 201:
                     mensaje += f"\nSubida Etiqueta. {n_row['Barcode'].strip()}"
                 else:
                     # TODO ¿No debería decir aquí "Error  al añadir la etiquetq"?
