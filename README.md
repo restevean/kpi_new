@@ -6,4 +6,4 @@ There are several environment .env files:
         - ENTORNO: `"dev"` for delepment context and `"pro"` for production  
         - INTEGRATION_CUST: three letters that correspond to a specific customer
 2. `.env.anedev` Specific environment corresponding an integration customer , Includes the rest of the envirom¡nment variables for this customer  
-It will be one `.env` for each integration customer `.ane` and for a context `pro` = `.emv.anepro`
+It will be one `.env` for each integration customer `.ane` and for a context `pro` = `.env.anepro`
