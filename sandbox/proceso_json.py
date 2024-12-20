@@ -1,3 +1,5 @@
+# sandbox/proceso_json.py
+
 import json
 from pathlib import Path
 
@@ -19,11 +21,6 @@ import json
 from pathlib import Path
 
 def generar_partidas_y_barcodes(json_path: str, expediente: dict) -> dict:
-    """
-    Genera dos estructuras:
-    1. 'partidas': Lista de partidas con la estructura solicitada.
-    2. 'barcodes': Lista de todos los bultos (barcodes) de todas las partidas con la estructura solicitada.
-    """
 
     with Path(json_path).open("r", encoding="utf-8") as f:
         data = json.load(f)
@@ -100,9 +97,6 @@ def generar_partidas_y_barcodes(json_path: str, expediente: dict) -> dict:
         partidas_list.append(partida_dict)
 
         # Extraer todos los códigos de barras (F00) de esta partida
-        # Para cada F00 creamos un diccionario en barcodes_list con la estructura solicitada
-        # "partida": consignment_number_sending_depot
-        # "codigobarras": barcode (limpio)
         for bulto in bultos:
             barcodes_in_bulto = bulto.get("barcodes", [])
             for barcode_element in barcodes_in_bulto:
@@ -123,7 +117,6 @@ def generar_partidas_y_barcodes(json_path: str, expediente: dict) -> dict:
     }
 
 
-# Ejemplo de uso
 if __name__ == "__main__":
     expediente_data = {
         "cexp": "CE12345",
@@ -135,17 +128,3 @@ if __name__ == "__main__":
     }
     result = generar_partidas_y_barcodes("resultados.json", expediente_data)
     print(json.dumps(result, indent=4, ensure_ascii=False))
-
-
-# # Ejemplo de uso:
-# if __name__ == "__main__":
-#     expediente_data = {
-#         "cexp": "CE12345",
-#         "ientrefcli": "ENT56789",
-#         "fpresal": "2024-01-17T22:57:24.737Z",
-#         "fsal": "2024-01-17T22:57:24.737Z",
-#         "fprelle": "2024-01-17T22:57:24.737Z",
-#         "flle": "2024-01-17T22:57:24.737Z"
-#     }
-#     result = generar_partidas_y_barcodes("resultados.json", expediente_data)
-#     print(json.dumps(result, indent=4, ensure_ascii=False))

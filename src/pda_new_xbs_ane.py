@@ -1,7 +1,6 @@
 # src/pda_new_xbs_ane.py
 
 import logging
-
 from send_email import EmailSender
 from utils.logger_config import setup_logger
 from pathlib import Path
@@ -188,12 +187,13 @@ class PdaNewXbsAne:
 
     def files_process(self, n_path: Path):
         logger.info(" --- Iniciando el procesamiento de archivos...")
-        mensaje = ""
 
         for file, info in self.files.items():
             file_path = Path(n_path) / file
             info['path'] = file_path
             trip = ""
+            mensaje = ""
+
             # n_ref_cor = ""
             self.enc_exp = False
 
@@ -232,23 +232,28 @@ class PdaNewXbsAne:
 
                 # Recorrer el diccionario 'data'
                 for partida in data_to_load.get("partidas", []):
+
                     # Extraer el consignment_number_sending_depot
-                    consignment_number = partida.get("consignment_number_sending_depot", "")
+                    ref_cor = partida.get("refcorresponsal", "")
 
                     # Llamar a partida_add() con el consignment_number_sending_depot
-                    partida_added = self.partida_add(consignment_number, info)
-                    if partida_added:
+                    partida_added = self.partida_load(ref_cor, partida, info)
+                    mensaje += partida_added[1]
+                    ipda = partida_added[2]
+                    cpda = partida_added[3]
+                    barcodes = data_to_load.get("barcodes", [])
+
+                    if partida_added[0]:
                         # Recorrer la lista de barcodes
-                        barcodes = partida.get("barcodes", [])
-                        for barcode in barcodes:
+                        barcodes = data_to_load.get("barcodes", [])
+                        # for barcode in barcodes:
+                        for barcode in (b for b in barcodes if b.get("sequential_waybill_item") == ref_cor):
                             sequential_waybill_item = barcode.get("sequential_waybill_item", "")
                             consignment_position = barcode.get("consignment_position", "")
                             code = barcode.get("barcode", "")
 
-                            # Llamar a barcode_add() con la información del barcode
-                            self.barcode_add(consignment_number, sequential_waybill_item, consignment_position,
-                                             code, info)
-
+                            # Llamar a barcode_add() con la información de los barcodes de la partida
+                            mensaje += self.barcode_load(ref_cor, barcode, ipda, cpda, info)
 
             else:
                 logger.info(f"Expediente {trip} no encontrado")
@@ -281,33 +286,82 @@ class PdaNewXbsAne:
                 # os.rename(info["path"], f"{self.local_work_processed / file}")
                 ...
 
-    def partida_add(self, consignment_number, info):
+    def partida_load(self, consignment_number, partida, info):
 
-        # success = False
-        # mensaje = ""
-        #
-        #
-        # # Buscamos la partida
-        # query_existe_partida = f"SELECT ipda, cpda FROM trapda WHERE nrefcor='{consignment_number}'"
-        # query_reply_existe_partida = self.bm.n_consulta(query=query_existe_partida)
-        #
-        # if not query_reply_existe_partida["contenido"]:
-        #     logging.debug(f" --- Hemos de comunicar la partida {consignment_number}")
-        #     resp_partida = self.bm.post_partida(data_json=pda_json_arc)
-        #
-        #     # Si exito al comunicar la partida
-        #     if resp_partida["status_code"] == 201:
-        #         ipda = resp_partida["contenido"]["id"]
-        #         cpda = resp_partida["contenido"]["codigo"]
-        #         mensaje += f"\nCreada partida {resp_partida['contenido']['codigo']}"
-        #         logging.debug(f" --- Creada partida {resp_partida['contenido']['codigo']}")
-        #
-        # return success
-        ...
+        success = False
+        mensaje = ""
+        ipda = ""
+        cpda = ""
+
+        # Buscamos la partida
+        query_existe_partida = f"SELECT ipda, cpda FROM trapda WHERE nrefcor='{consignment_number}'"
+        query_reply_existe_partida = self.bm.n_consulta(query=query_existe_partida)
+
+        if not query_reply_existe_partida["contenido"]:
+            logging.debug(f" --- Hemos de comunicar la partida {consignment_number}")
+            resp_partida = self.bm.post_partida(data_json=partida)
+
+            # Si exito al comunicar la partida
+            if resp_partida["status_code"] == 201:
+                ipda = resp_partida["contenido"]["id"]
+                cpda = resp_partida["contenido"]["codigo"]
+                mensaje += f"\nCreada partida {cpda}/{ipda}"
+                logging.debug(f" --- Creada partida {cpda}/{ipda}")
+            else:
+                mensaje += f"\nError al comunicar la partida {consignment_number}"
+                logging.error(f" --- Error al comunicar la partida {consignment_number}")
+                success = False
+        else:
+            ipda = query_reply_existe_partida["contenido"][0]["ipda"]
+            cpda = query_reply_existe_partida["contenido"][0]["cpda"]
+            mensaje += f"\nLa partida {cpda}/{ipda} ya existe"
+            logging.debug(f" --- Partida {cpda}/{ipda} ya existe")
+            success = True
+
+        return success, mensaje, ipda, cpda
 
 
-    def barcode_add(self, consignment_number, sequential_waybill_item, consignment_position, code, info):
-        ...
+    def barcode_load(self, ref_cor, barcode, ipda, cpda, info):
+
+        # Verificamos que la partida no tiene bultos
+        logging.info(f" --- Barcode: {barcode['Barcode']}")
+        # n_row = self.bx.linea_xbs(row)
+        mensaje = ""
+
+        # Si tenemos nº ipda (partida) y barcode (algún bulto)
+        if ipda > 0 and barcode["Barcode"].strip():
+
+            # Comprobamos que no existe rl barcode
+            query_barcode = query = (f"SELECT COUNT(1) AS cuenta FROM ttemereti WHERE ipda={ipda} "
+                                     f"AND dcodbar='{barcode['Barcode'].strip()}'")
+            query_barcode_reply = self.bm.n_consulta(query=query_barcode)
+
+            # Si no existe
+            if not query_barcode_reply:
+                json_etiqueta = {
+                    "codigobarras": barcode["Barcode"].strip(),
+                    "altura": float(barcode["Hight"].strip()) / 100,
+                    "ancho": float(barcode["Width"].strip()) / 100,
+                    "largo": float(barcode["Lenght"].strip()) / 100,
+                }
+                # Cargamos el barcode
+                resp_etiqueta = self.bm.post_partida_etiqueta(id=ipda, data_json=json_etiqueta)
+                # Actualizamos el mensaje en función del resultado
+                if resp_etiqueta["cod_error"] == 201:
+                    mensaje += f"\nSubida Etiqueta. {barcode['Barcode'].strip()}"
+                else:
+                    mensaje += (f"\nYa existe la etiqueta {barcode['Barcode'].strip()} "
+                                f"de la "
+                                f"partida {cpda}")
+            # Si existe el bulto
+            else:
+                mensaje += f"\nSe encontró el bulto {barcode['Barcode'].strip()}"
+                logging.info("Bulto encontrado")
+
+        else:
+            logging.info(f"No es cabecera, cpda: {cpda}, ipda: {ipda}, barcode: {barcode['Barcode'].strip()}")
+
+        return mensaje
 
 
 
@@ -407,19 +461,19 @@ class PdaNewXbsAne:
             partidas_list.append(partida_dict)
 
             if shipper_json is not None:
-                partidas_list = merge(partidas_list, shipper_json)
+                partidas_list[-1] = merge(partidas_list[-1], shipper_json)
 
             # TODO Falta el incoterm
-            if partidas_list["incoterm"] == "DAP":
+            if partidas_list[-1]["incoterm"] == "DAP":
                 json_fact = {
                     "clientefacturacion": {
                         "id": expediente["ientcor"]
                     }
                 }
-                partidas_list = merge(partidas_list, json_fact)
+                partidas_list[-1] = merge(partidas_list[-1], json_fact)
 
             if consignee_json is not None:
-                partidas_list = merge(partidas_list, consignee_json)
+                partidas_list[-1] = merge(partidas_list[-1], consignee_json)
 
 
             # Extraemos todos los códigos de barras (F00) de esta partida

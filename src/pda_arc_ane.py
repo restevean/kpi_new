@@ -40,9 +40,7 @@ class PartidaArcAne:
         self.sftp_user = os.getenv("SFTP_USER_ARC")
         self.sftp_pw = os.getenv("SFTP_PW_ARC")
         self.sftp_port = os.getenv("SFTP_PORT_ARC")
-        # self.email_from = "integraciones@anexalogistica.com"
         self.email_from = "Arcese Partida"
-        # self.email_to = ["javier@kpianalisis.com, dgorriz@anexalogistica.com, trafico2@trafico2@anexalogistica.com"]
         self.email_to = [EMAIL_OURS, EMAIL_TO_ARC]
         self.email_to += ["trafico2@anexalogistica.com"] if ENTORNO == "pro" else []
         self.remote_work_out_directory = os.getenv("SFTP_PDA_PATH_ARC")
@@ -103,7 +101,6 @@ class PartidaArcAne:
         if (empresa["ient"] > 0):
             return {"destinatario": {"id": empresa["ient"]}}
         else:
-            # json_destinatario = {
             return {
                 "destinatario": {
                     "division": "VLC",
@@ -353,9 +350,6 @@ class PartidaArcAne:
                     mensaje += f"\nCreada partida {resp_partida['contenido']['codigo']}"
                     logging.debug(f" --- Creada partida {resp_partida['contenido']['codigo']}")
 
-
-
-
                 # Si falla comunicar la partida
                 else:
                     errores = "\n".join(
@@ -383,6 +377,7 @@ class PartidaArcAne:
         logging.debug(f" --- No existe el expediente {trip} {n_ref(trip)}")
         return [ipda, cpda, info, trip]
 
+
     def line_process(self, row, ipda, cpda, info):
         n_row = self.ba.linea_arcese(row)
         mensaje = ""
@@ -409,7 +404,7 @@ class PartidaArcAne:
                 if resp_etiqueta["status_code"] == 201:
                     mensaje += f"\nSubida Etiqueta. {n_row['Barcode'].strip()}"
                 else:
-                    # TODO ¿No debería decir aquí "Error  al añadir la etiquetq"?
+                    # TODO ¿No debería decir aquí "Error  al añadir la etiqueta"?
                     mensaje += (f"\nYa existe la etiqueta {n_row['Barcode'].strip()} de la partida {cpda}")
 
             # Si existe el bulto
@@ -423,7 +418,6 @@ class PartidaArcAne:
 
         # Guardar el mensaje (+=) en info["n_message"]
         info["n_message"] += mensaje
-        ...
 
 
     def run(self):

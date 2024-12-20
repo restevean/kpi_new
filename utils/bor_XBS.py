@@ -188,6 +188,7 @@ class BorXBT:
             json.dump(self.expediente, file, ensure_ascii=False, indent=4)
 
     def rellena_linea(self, linea):
+        linea = linea.replace('\n', '')
         return linea.ljust(400)
 
     def _procesar_datos_extra(self, fila):
