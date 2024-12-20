@@ -1,0 +1,283 @@
+{
+    "level_1": {
+        "A00": {
+            "record_type_a00": "A00",
+            "data_type_qualifier": "STD",
+            "release_version": "100",
+            "waybill_number": "ES24ET1865                         ",
+            "waybill_date": "16122024",
+            "transport_type": "L  ",
+            "product": "CL ",
+            "code_list_(cooperation)": "CL ",
+            "currency": "EUR",
+            "identification_of_waybill_consignor": "XBSOPO                             ",
+            "identification_of_waybill_consignee": "ANEXA_VAL                          ",
+            "freight_operator": "TRANSPORTES SA LDA                 ",
+            "freight_operator_country": "PT ",
+            "freight_operator_postcode": "3130-430 ",
+            "freight_operator_town": "VINHA DA RAINHA                    ",
+            "vehicle_license_number_1": "CN-643-ZL\n                         ",
+            "vehicle_license_number_2": "                                   ",
+            "routing_id_1": "                                   ",
+            "routing_id_2": "                                   "
+        },
+        "A10": {
+            "record_type_a10": "A10",
+            "loading_units_no_1": "1                                  ",
+            "lead_seal_number_1_for_lu_1": "\n                                  ",
+            "lead_seal_number_2_for_lu_1": "                                   ",
+            "lead_seal_number_3_for_lu_1": "                                   ",
+            "lead_seal_number_4_for_lu_1": "                                   "
+        }
+    },
+    "partidas": [
+        {
+            "B00-SHP": {
+                "record_type_b00": "B00",
+                "sequential_waybill_item": "001",
+                "qualifier_(address_type)": "SHP",
+                "name_1": "MAIUSCULO MERIDIANO UNIPESSOAL LDA ",
+                "street_and_street_number": "RUA DA ALEGRIA 213 R/C ESQ         ",
+                "country_code": "PT ",
+                "postcode": "4480-743 ",
+                "place": "VILA DO CONDE                      "
+            },
+            "B00-CON": {
+                "record_type_b00": "B00",
+                "sequential_waybill_item": "001",
+                "qualifier_(address_type)": "CON",
+                "name_1": "VENDING MOGORT SL                  ",
+                "street_and_street_number": "Cantalot.7                         ",
+                "country_code": "ES ",
+                "postcode": "46760    ",
+                "place": "Tavernes de la Valldigna           "
+            },
+            "bultos": [
+                {
+                    "D00": {
+                        "record_type_d00": "D00",
+                        "sequential_waybill_item": "001",
+                        "consignment": "001",
+                        "num_err_of": "0004"
+                    },
+                    "barcodes": [
+                        {
+                            "F00": {
+                                "record_type_f00": "F00",
+                                "sequential_waybill_item": "001",
+                                "consignment_position": "001",
+                                "barcode": "TE-243087-003\n                     ",
+                                "reference_qualifier": "   ",
+                                "reference_number": "                                   ",
+                                "reference_qualifier_1": "   ",
+                                "reference_number_1": "                                   ",
+                                "reference_qualifier_2": "   ",
+                                "reference_number_2": "                                   ",
+                                "reference_qualifier_3": "   ",
+                                "reference_number_3": "                                   ",
+                                "reference_qualifier_4": "   ",
+                                "reference_number_4": "                                   "
+                            }
+                        },
+                        {
+                            "F00": {
+                                "record_type_f00": "F00",
+                                "sequential_waybill_item": "001",
+                                "consignment_position": "001",
+                                "barcode": "TE-243087-004\n                     ",
+                                "reference_qualifier": "   ",
+                                "reference_number": "                                   ",
+                                "reference_qualifier_1": "   ",
+                                "reference_number_1": "                                   ",
+                                "reference_qualifier_2": "   ",
+                                "reference_number_2": "                                   ",
+                                "reference_qualifier_3": "   ",
+                                "reference_number_3": "                                   ",
+                                "reference_qualifier_4": "   ",
+                                "reference_number_4": "                                   "
+                            }
+                        },
+                        {
+                            "F00": {
+                                "record_type_f00": "F00",
+                                "sequential_waybill_item": "001",
+                                "consignment_position": "001",
+                                "barcode": "TE-243087-002\n                     ",
+                                "reference_qualifier": "   ",
+                                "reference_number": "                                   ",
+                                "reference_qualifier_1": "   ",
+                                "reference_number_1": "                                   ",
+                                "reference_qualifier_2": "   ",
+                                "reference_number_2": "                                   ",
+                                "reference_qualifier_3": "   ",
+                                "reference_number_3": "                                   ",
+                                "reference_qualifier_4": "   ",
+                                "reference_number_4": "                                   "
+                            }
+                        },
+                        {
+                            "F00": {
+                                "record_type_f00": "F00",
+                                "sequential_waybill_item": "001",
+                                "consignment_position": "001",
+                                "barcode": "TE-243087-001\n                     ",
+                                "reference_qualifier": "   ",
+                                "reference_number": "                                   ",
+                                "reference_qualifier_1": "   ",
+                                "reference_number_1": "                                   ",
+                                "reference_qualifier_2": "   ",
+                                "reference_number_2": "                                   ",
+                                "reference_qualifier_3": "   ",
+                                "reference_number_3": "                                   ",
+                                "reference_qualifier_4": "   ",
+                                "reference_number_4": "                                   "
+                            }
+                        }
+                    ]
+                }
+            ],
+            "G00": {
+                "record_type_g00": "G00",
+                "sequential_waybill_item": "001",
+                "consignment_number_sending_depot": "243087                             ",
+                "actual_consignment_gross_weight_in_kg": "000800000",
+                "delivery_term": "64 ",
+                "direct_delivery_yn": "N",
+                "pickup_date": "00000000",
+                "pickup_time_from": "0000",
+                "pickup_time_to": "0000",
+                "logistics_model": "      ",
+                "consignment_number_for_receiving_depot": "                                   ",
+                "consignor_id_original_waybill": "                                   ",
+                "consignee_id_original_waybill": "                                   ",
+                "material_group": "001",
+                "goods_value": "00000000000",
+                "currency_of_goods_value": "   ",
+                "chargeable_consignment_weight_in_kg": "000000000",
+                "cubic_meters": "08448",
+                "loading_meters": "000",
+                "number_of_pallet_locations": "0000",
+                "number_of_additional_loading_tools_1": "00",
+                "packaging_type_for_additional_loading_tools_1": "   ",
+                "number_of_additional_loading_tools_2": "00",
+                "packaging_type_for_additional_loading_tools_2": "   "
+            }
+        },
+        {
+            "B00-SHP": {
+                "record_type_b00": "B00",
+                "sequential_waybill_item": "002",
+                "qualifier_(address_type)": "SHP",
+                "name_1": "NIBBLE ENGENHARIA LDA              ",
+                "street_and_street_number": "Rua de Júlio Dinis 265             ",
+                "country_code": "PT ",
+                "postcode": "4785-330 ",
+                "place": "TROFA                              "
+            },
+            "B00-CON": {
+                "record_type_b00": "B00",
+                "sequential_waybill_item": "002",
+                "qualifier_(address_type)": "CON",
+                "name_1": "ACTIVI SEGURIDAD Y SISTEMAS, S.L.  ",
+                "street_and_street_number": "CALLE ESLOVENIA 14                 ",
+                "country_code": "ES ",
+                "postcode": "46200    ",
+                "place": "PAIPORTA                           "
+            },
+            "bultos": [
+                {
+                    "D00": {
+                        "record_type_d00": "D00",
+                        "sequential_waybill_item": "002",
+                        "consignment": "001",
+                        "num_err_of": "0001"
+                    },
+                    "barcodes": [
+                        {
+                            "F00": {
+                                "record_type_f00": "F00",
+                                "sequential_waybill_item": "002",
+                                "consignment_position": "001",
+                                "barcode": "TE-241941-001\n                     ",
+                                "reference_qualifier": "   ",
+                                "reference_number": "                                   ",
+                                "reference_qualifier_1": "   ",
+                                "reference_number_1": "                                   ",
+                                "reference_qualifier_2": "   ",
+                                "reference_number_2": "                                   ",
+                                "reference_qualifier_3": "   ",
+                                "reference_number_3": "                                   ",
+                                "reference_qualifier_4": "   ",
+                                "reference_number_4": "                                   "
+                            }
+                        }
+                    ]
+                }
+            ],
+            "G00": {
+                "record_type_g00": "G00",
+                "sequential_waybill_item": "002",
+                "consignment_number_sending_depot": "241941                             ",
+                "actual_consignment_gross_weight_in_kg": "000060000",
+                "delivery_term": "02 ",
+                "direct_delivery_yn": "N",
+                "pickup_date": "00000000",
+                "pickup_time_from": "0000",
+                "pickup_time_to": "0000",
+                "logistics_model": "      ",
+                "consignment_number_for_receiving_depot": "                                   ",
+                "consignor_id_original_waybill": "                                   ",
+                "consignee_id_original_waybill": "                                   ",
+                "material_group": "001",
+                "goods_value": "00000000000",
+                "currency_of_goods_value": "   ",
+                "chargeable_consignment_weight_in_kg": "000000000",
+                "cubic_meters": "00384",
+                "loading_meters": "000",
+                "number_of_pallet_locations": "0000",
+                "number_of_additional_loading_tools_1": "00",
+                "packaging_type_for_additional_loading_tools_1": "   ",
+                "number_of_additional_loading_tools_2": "00",
+                "packaging_type_for_additional_loading_tools_2": "   "
+            },
+            "H00": {
+                "record_type_h00": "H00",
+                "sequential_waybill_item": "002",
+                "text_code_1": "503",
+                "additional_text_1": "ANEXA_VAL 31148                    ",
+                "text_code_2": "\n  ",
+                "additional_text_2": "                                   ",
+                "text_code_3": "   ",
+                "additional_text_3": "                                   ",
+                "text_code_4": "   ",
+                "additional_text_4": "                                   ",
+                "text_code_5": "   ",
+                "additional_text_5": "                                   ",
+                "text_code_6": "   ",
+                "additional_text_6": "                                   "
+            }
+        }
+    ],
+    "J00": {
+        "record_type_j00": "J00",
+        "total_number_of_consignments": "002",
+        "total_number_of_packages": "000005",
+        "actual_gross_weight_in_kg": "000860000",
+        "number_of_box_pallets": "0000",
+        "number_of_euro_flat_pallets": "0000",
+        "number_of_additional_loading_tools_flat": "0000",
+        "number_of_additional_loading_tools_box": "0000",
+        "totals_taxable_from100": "00000000000",
+        "totals_not_taxable_from100": "00000000000",
+        "totals_of_product_value_cod_from_100": "00000000000",
+        "totals_of_customs_from_100": "00000000000",
+        "totals_of_im": "00000000000",
+        "totals_of_value_added_tax": "00000000000"
+    },
+    "Z00": {
+        "record_type_z00": "Z00",
+        "total_number_of_data_records": "000017",
+        "date_of_creation": "16122024",
+        "time_of_creation": "152903"
+    }
+}

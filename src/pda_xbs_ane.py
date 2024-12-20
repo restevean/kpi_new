@@ -110,8 +110,8 @@ class PartidaXbsAne:
 
     def files_process(self, n_path):
         logger.info(" --- Iniciando el procesamiento de archivos...")
-        bm = BmApi()
-        email_sender = EmailSender()
+        # bm = BmApi()
+        # email_sender = EmailSender()
         encontrado_expediente = False
         mensaje = ""
 
@@ -150,7 +150,7 @@ class PartidaXbsAne:
                         # Si es cabecera
                         if fila[:3] == 'A00':
 
-                            # Por claridad procesamos la cabecera en un method
+                            # Por claridad procesamos la cabecera en un methodo separado
                             process_header_data = self.header_process(file, fila, info)
                             ipda = process_header_data[0]
                             cpda = process_header_data[1]
@@ -163,7 +163,7 @@ class PartidaXbsAne:
                         # No es cabecera y se ha encontrado expediente (LINEAS)
                         elif encontrado_expediente:
 
-                            # Por claridad procesamos la línea en un method
+                            # Por claridad procesamos la línea en un methodo a parte
                             self.line_process(fila, ipda, cpda, info)
 
                     if not info["process_again"]:

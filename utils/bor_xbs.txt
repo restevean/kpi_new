@@ -1,5 +1,5 @@
 @@PHBORD100
-A00STD1001ES24ET1865                        16122024L  CL CL EURXBSOPO                             ANEXA_VAL                          TRANSPORTES SA LDA                 PT 3130-430 VINHA DA RAINHA                    CN-643-ZL                          
+A00STD100ES24ET1865                         16122024L  CL CL EURXBSOPO                             ANEXA_VAL                          TRANSPORTES SA LDA                 PT 3130-430 VINHA DA RAINHA                    CN-643-ZL
 A101                                  
 B00001SHPMAIUSCULO MERIDIANO UNIPESSOAL LDA RUA DA ALEGRIA 213 R/C ESQ         PT 4480-743 VILA DO CONDE                      
 B00001CONVENDING MOGORT SL                  Cantalot.7                         ES 46760    Tavernes de la Valldigna           

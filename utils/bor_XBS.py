@@ -2,6 +2,7 @@ import json
 import logging
 from utils.logger_config import setup_logger
 from pathlib import Path
+from typing import Dict, Any
 
 
 setup_logger()
@@ -12,7 +13,7 @@ base_dir = Path(__file__).resolve().parent
 
 class BorXBT:
     def __init__(self):
-        self.expediente = {
+        self.expediente: Dict[str, Any] = {
             "level_1": {},
             "partidas": [],
             "J00": {},
@@ -26,7 +27,7 @@ class BorXBT:
         if linea.startswith("@@P"):
             return                      # No procesar líneas que empiezan por @@P
 
-        linea = self._complementar_linea(linea)
+        linea = self.rellena_linea(linea)
         clave = linea[:3]
         metodo = {
             "A00": self.level_1_xbs,
@@ -48,7 +49,7 @@ class BorXBT:
         if metodo:
             metodo(linea)
         else:
-            print(f"Línea con clave '{clave}' no reconocida: {linea}")
+            logging.error(f"Línea con clave '{clave}' no reconocida: {linea}")
 
     def level_1_xbs(self, fila):
         if fila[:3] == "A00":
@@ -86,7 +87,7 @@ class BorXBT:
     def level_1_totales(self, fila):
         if fila[:3] == "J00":
             self.expediente["J00"] = {
-                "record_type_j00": fila[1:3],
+                "record_type_j00": fila[:3],
                 "total_number_of_consignments": fila[3:6],
                 "total_number_of_packages": fila[6:12],
                 "actual_gross_weight_in_kg": fila[12:21],
@@ -126,7 +127,7 @@ class BorXBT:
                     }
                 }
             elif self.b00_counter == 2:
-                self.current_partida["B00_CON"] = {
+                self.current_partida["B00-CON"] = {
                     "record_type_b00": fila[0:3],
                     "sequential_waybill_item": fila[3:6],
                     "qualifier_(address_type)": fila[6:9],
@@ -165,7 +166,6 @@ class BorXBT:
                     # "record_type": fila[0:3],
                     # "sequential_waybill_item": fila[3:6],
                     # "product_number": fila[10:24],
-
                     "record_type_f00": fila[0:3],
                     "sequential_waybill_item": fila[3:6],
                     "consignment_position": fila[6:9],
@@ -183,16 +183,11 @@ class BorXBT:
                 }
             })
 
-
-
-
-
-
     def exportar_json(self, path):
         with open(path, 'w', encoding='utf-8') as file:
             json.dump(self.expediente, file, ensure_ascii=False, indent=4)
 
-    def _complementar_linea(self, linea):
+    def rellena_linea(self, linea):
         return linea.ljust(400)
 
     def _procesar_datos_extra(self, fila):
@@ -290,16 +285,11 @@ class BorXBT:
         return {}
 
 
-# Ejemplo de uso:
-# bor = BorXBT()
-# for linea in archivo:
-#     bor.procesar_linea(linea)
-# bor.exportar_json("expediente.json")
 
 
 if __name__ == "__main__":
     bor = BorXBT()
-    with open("bor_xbs.txt", "r", encoding="utf-8") as archivo:
+    with open(base_dir / "bor_xbs.txt", "r", encoding="utf-8") as archivo:
         for linea in archivo:
             bor.procesar_linea(linea)
-    bor.exportar_json("BORD512_1ES24ET1865_31148_16122024-152903_UTF-8.json")
+    bor.exportar_json("bor_xbs.json")

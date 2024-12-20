@@ -4,7 +4,7 @@
             "record_type_a00": "A00",
             "data_type_qualifier": "STD",
             "release_version": "100",
-            "waybill_number": "1ES24ET1865                        ",
+            "waybill_number": "ES24ET1865                         ",
             "waybill_date": "16122024",
             "transport_type": "L  ",
             "product": "CL ",
@@ -16,8 +16,8 @@
             "freight_operator_country": "PT ",
             "freight_operator_postcode": "3130-430 ",
             "freight_operator_town": "VINHA DA RAINHA                    ",
-            "vehicle_license_number_1": "CN-643-ZL                          ",
-            "vehicle_license_number_2": "\n                                  ",
+            "vehicle_license_number_1": "CN-643-ZL\n                         ",
+            "vehicle_license_number_2": "                                   ",
             "routing_id_1": "                                   ",
             "routing_id_2": "                                   "
         },
@@ -42,7 +42,7 @@
                 "postcode": "4480-743 ",
                 "place": "VILA DO CONDE                      "
             },
-            "B00_CON": {
+            "B00-CON": {
                 "record_type_b00": "B00",
                 "sequential_waybill_item": "001",
                 "qualifier_(address_type)": "CON",
@@ -174,7 +174,7 @@
                 "postcode": "4785-330 ",
                 "place": "TROFA                              "
             },
-            "B00_CON": {
+            "B00-CON": {
                 "record_type_b00": "B00",
                 "sequential_waybill_item": "002",
                 "qualifier_(address_type)": "CON",
@@ -259,7 +259,7 @@
         }
     ],
     "J00": {
-        "record_type_j00": "00",
+        "record_type_j00": "J00",
         "total_number_of_consignments": "002",
         "total_number_of_packages": "000005",
         "actual_gross_weight_in_kg": "000860000",
