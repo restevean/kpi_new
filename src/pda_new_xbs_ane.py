@@ -345,7 +345,8 @@ class PdaNewXbsAne:
                     "largo": float(barcode["Lenght"].strip()) / 100,
                 }
                 # Cargamos el barcode
-                resp_etiqueta = self.bm.post_partida_etiqueta(id=ipda, data_json=json_etiqueta)
+                resp_etiqueta = self.bm.post_partida_etiqueta(paet_id=ipda, data_json=json_etiqueta)
+
                 # Actualizamos el mensaje en función del resultado
                 if resp_etiqueta["cod_error"] == 201:
                     mensaje += f"\nSubida Etiqueta. {barcode['Barcode'].strip()}"
