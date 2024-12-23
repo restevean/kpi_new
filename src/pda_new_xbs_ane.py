@@ -322,7 +322,7 @@ class PdaNewXbsAne:
     def barcode_load(self, ref_cor, barcode, ipda, cpda, info) -> str:
 
         # Verificamos que la partida no tiene bultos
-        logging.info(f" --- Barcode: {barcode['Barcode']}")g
+        logging.info(f" --- Barcode: {barcode['Barcode']}")
         # n_row = self.bx.linea_xbs(row)
         mensaje = ""
 
