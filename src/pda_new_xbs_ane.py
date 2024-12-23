@@ -49,15 +49,15 @@ class PdaNewXbsAne:
         self.barcodes = []
 
     @staticmethod
-    def expediente_ordenante(cabecera_=None):
+    def expediente_ordenante(header: dict = None) -> dict:
 
-        if cabecera_ is None:
-            cabecera_ = {}
+        if header is None:
+            header = {}
 
         empresa = busca_destinatario(
-            rsocial=cabecera_["Sender Company Name"].strip(),
-            codpostal=cabecera_["Sender ZipCode"].strip(),
-            cpais=cabecera_["Sender Country Code"].strip()
+            rsocial=header["Sender Company Name"].strip(),
+            codpostal=header["Sender ZipCode"].strip(),
+            cpais=header["Sender Country Code"].strip()
         )
 
         logging.info(empresa)
@@ -68,33 +68,33 @@ class PdaNewXbsAne:
             return {
                 "expedidor": {
                     "division": "VLC",
-                    "descripcion": cabecera_["Sender Company Name"].strip() + " +++(BORRAR)+++",
+                    "descripcion": header["Sender Company Name"].strip() + " +++(BORRAR)+++",
                     "empresa": {
                         "division": "VLC",
-                        "codigopaisfiscal": cabecera_["Sender Country Code"].strip(),
-                        "descripcion": cabecera_["Sender Company Name"].strip(),
+                        "codigopaisfiscal": header["Sender Country Code"].strip(),
+                        "descripcion": header["Sender Company Name"].strip(),
                         "tipopersona": "N",
-                        "nombreempresafisica": cabecera_["Sender Company Name"].strip()[:19],
+                        "nombreempresafisica": header["Sender Company Name"].strip()[:19],
                         "direccionfiscal": {
-                            "direccion": cabecera_["Sender Address"].strip(),
-                            "poblacion": cabecera_["Sender Place"].strip(),
-                            "codigopostal": cabecera_["Sender ZipCode"].strip(),
-                            "codigopais": cabecera_["Sender Country Code"].strip()
+                            "direccion": header["Sender Address"].strip(),
+                            "poblacion": header["Sender Place"].strip(),
+                            "codigopostal": header["Sender ZipCode"].strip(),
+                            "codigopais": header["Sender Country Code"].strip()
                         }
                     },
                 }
             }
 
     @staticmethod
-    def expediente_destinatario(cabecera_=None):
+    def expediente_destinatario(header: dict = None) -> dict:
 
-        if cabecera_ is None:
-            cabecera_ = {}
+        if header is None:
+            header = {}
 
         empresa = busca_destinatario(
-            rsocial=cabecera_["Destination Company Name"].strip(),
-            codpostal=cabecera_["Destination ZipCode"].strip(),
-            cpais=cabecera_["Destination Country Code"].strip()
+            rsocial=header["Destination Company Name"].strip(),
+            codpostal=header["Destination ZipCode"].strip(),
+            cpais=header["Destination Country Code"].strip()
         )
 
         logging.info(empresa)
@@ -106,31 +106,29 @@ class PdaNewXbsAne:
             return {
                 "destinatario": {
                     "division": "VLC",
-                    "descripcion": cabecera_["Destination Company Name"].strip() + " +++(BORRAR)+++",
-                    "codigorelacioncliente": cabecera_["Destination Company Name"].strip()[:19],
+                    "descripcion": header["Destination Company Name"].strip() + " +++(BORRAR)+++",
+                    "codigorelacioncliente": header["Destination Company Name"].strip()[:19],
                     "empresa": {
-                        "codigopaisfiscal": cabecera_["Destination Country Code"].strip(),
+                        "codigopaisfiscal": header["Destination Country Code"].strip(),
                         "direccionfiscal": {
-                            "direccion": cabecera_["Destination Address"].strip(),
-                            "poblacion": cabecera_["Destination Place"].strip(),
-                            "codigopostal": cabecera_["Destination ZipCode"].strip(),
-                            "codigopais": cabecera_["Destination Country Code"].strip()
+                            "direccion": header["Destination Address"].strip(),
+                            "poblacion": header["Destination Place"].strip(),
+                            "codigopostal": header["Destination ZipCode"].strip(),
+                            "codigopais": header["Destination Country Code"].strip()
                         }
                     },
                     "direcciones": [
                         {
-                            "direccion": cabecera_["Destination Address"].strip(),
-                            "poblacion": cabecera_["Destination Place"].strip(),
-                            "codigopostal": cabecera_["Destination ZipCode"].strip(),
-                            "codigopais": cabecera_["Destination Country Code"].strip(),
+                            "direccion": header["Destination Address"].strip(),
+                            "poblacion": header["Destination Place"].strip(),
+                            "codigopostal": header["Destination ZipCode"].strip(),
+                            "codigopais": header["Destination Country Code"].strip(),
                         }
                     ],
                 }
             }
 
-    # def load_dir_files(self, subdir=''):
     def load_dir_files(self, subdir: Path = None) -> Dict[str, Dict[str, Any]]:
-        # subdir = self.local_work_directory if subdir == '' else subdir
         subdir = self.local_work_directory if subdir is None else subdir
         subdir = Path(subdir)
         filtered_files = {
@@ -147,7 +145,7 @@ class PdaNewXbsAne:
         }
         return filtered_files
 
-    def download_files(self):
+    def download_files(self) -> None:
         n_ftp = FtpConnection(self.ftp_url, self.ftp_user, self.ftp_pw)
 
         try:
@@ -185,7 +183,7 @@ class PdaNewXbsAne:
             logger.info(" --- Desconectado del servidor FTP")
 
 
-    def files_process(self, n_path: Path):
+    def files_process(self, n_path: Path) -> None:
         logger.info(" --- Iniciando el procesamiento de archivos...")
 
         for file, info in self.files.items():
@@ -286,7 +284,7 @@ class PdaNewXbsAne:
                 # os.rename(info["path"], f"{self.local_work_processed / file}")
                 ...
 
-    def partida_load(self, consignment_number, partida, info):
+    def partida_load(self, consignment_number, partida, info) -> tuple:
 
         success = False
         mensaje = ""
@@ -301,7 +299,7 @@ class PdaNewXbsAne:
             logging.debug(f" --- Hemos de comunicar la partida {consignment_number}")
             resp_partida = self.bm.post_partida(data_json=partida)
 
-            # Si exito al comunicar la partida
+            # Si éxito al comunicar la partida
             if resp_partida["status_code"] == 201:
                 ipda = resp_partida["contenido"]["id"]
                 cpda = resp_partida["contenido"]["codigo"]
@@ -321,10 +319,10 @@ class PdaNewXbsAne:
         return success, mensaje, ipda, cpda
 
 
-    def barcode_load(self, ref_cor, barcode, ipda, cpda, info):
+    def barcode_load(self, ref_cor, barcode, ipda, cpda, info) -> str:
 
         # Verificamos que la partida no tiene bultos
-        logging.info(f" --- Barcode: {barcode['Barcode']}")
+        logging.info(f" --- Barcode: {barcode['Barcode']}")g
         # n_row = self.bx.linea_xbs(row)
         mensaje = ""
 
@@ -351,9 +349,8 @@ class PdaNewXbsAne:
                 if resp_etiqueta["cod_error"] == 201:
                     mensaje += f"\nSubida Etiqueta. {barcode['Barcode'].strip()}"
                 else:
-                    mensaje += (f"\nYa existe la etiqueta {barcode['Barcode'].strip()} "
-                                f"de la "
-                                f"partida {cpda}")
+                    mensaje += (f"\nYa existe la etiqueta {barcode['Barcode'].strip()} de la partida {cpda}")
+
             # Si existe el bulto
             else:
                 mensaje += f"\nSe encontró el bulto {barcode['Barcode'].strip()}"
@@ -363,9 +360,6 @@ class PdaNewXbsAne:
             logging.info(f"No es cabecera, cpda: {cpda}, ipda: {ipda}, barcode: {barcode['Barcode'].strip()}")
 
         return mensaje
-
-
-
 
 
     def transform_results_to_dict(self, json_path: Path, expediente: dict) -> Dict[str, Any]:
@@ -397,15 +391,14 @@ class PdaNewXbsAne:
                 "Destination Place": b00_con.get("place", ""),
                 "Destination Country Code": b00_con.get("country_code", "")}
 
-            shipper_json = self.expediente_ordenante(cabecera_=shipper)
-            consignee_json = self.expediente_destinatario(cabecera_=consignee)
+            shipper_json = self.expediente_ordenante(header=shipper)
+            consignee_json = self.expediente_destinatario(header=consignee)
 
             # Extraemos los datos de G00
             consignment_number_sending_depot = g00.get("consignment_number_sending_depot", "").strip()
             total_gross_weight_str = g00.get("actual_consignment_gross_weight_in_kg", "0").strip()
             total_volume_str = g00.get("cubic_meters", "0").strip()
             insured_amount_str = g00.get("goods_value", "0").strip()
-
             total_gross_weight = float(total_gross_weight_str) / 100
             total_volume = float(total_volume_str) / 100
             insured_amount = float(insured_amount_str) / 100
@@ -429,7 +422,7 @@ class PdaNewXbsAne:
                 "refcliente": expediente["ientrefcli"],
                 "refcorresponsal": consignment_number_sending_depot,
                 "tipocarga": "C",
-                "puertoorigen": "TIRARCCAM",
+                "puertoorigen": "", # "TIRARCCAM"
                 "puertodestino": "TIRANERIB",
                 "paisorigen": b00_shp.get("country_code", "").strip(),
                 "paisdestino": b00_con.get("country_code", "").strip(),
