@@ -6,6 +6,7 @@ from datetime import timezone
 from dotenv import load_dotenv
 from utils.bmaster_api import BmasterApi as BmApi
 from utils.compose_q10_line import compose_arc_header
+from utils.send_email import EmailSender as email
 from utils.misc import n_ref
 import pandas as pd
 import logging
@@ -45,6 +46,10 @@ class EstadoAneArc:
         self.partidas = None
         self.max_itrk = None
         self.bm = BmApi()
+        self.email = email()
+        self.mensaje=""
+        self.enviarMensaje =False
+        self.email_list_to =["dgorriz@anexalogistica.com", "javier@kpianalisis.com"]
         self.query_partidas = """
         SELECT TOP 10
             itrk, aebtrk.ihit, aebhit.chit, aebhit.dhit, maxitrk, aebtrk.fmod, aebtrk.hmod, 
@@ -77,7 +82,7 @@ class EstadoAneArc:
             AND trapda.ientcor IN (244692,252997,244799,77904,246489,251061,185744,244788,255503,252995,253463,253462,77957,253464,244152,89322,96202,94544)
             AND trapda.cpda LIKE 'TIP%'
             AND (maxitrk < itrk OR maxitrk IS NULL)
-            AND YEAR(fhit) * 100 + MONTH(fhit) > 202411
+            AND YEAR(fhit) * 100 + MONTH(fhit) > 202410
         ORDER BY 
             ipda, itrk ASC;
         """
@@ -113,7 +118,7 @@ class EstadoAneArc:
     @property
     def query_repesca(self):
         return f"""
-                SELECT TOP 2000
+                SELECT 
                     trapda.cpda,
                     trapda.ipda,
                     nrefcor,
@@ -127,10 +132,21 @@ class EstadoAneArc:
                     aebtrk.hhit
                 FROM
                     aebtrk
+		
                 INNER JOIN
                     trapda
                     ON trapda.ipda = aebtrk.creg
                     AND aebtrk.dtab = 'trapda'
+							
+				left join (select max (a.itrk) max_itrk_ipda, t.ipda
+							 FROM
+								aebtrk a
+							INNER JOIN
+								trapda t
+								ON t.ipda = a.creg
+								AND a.dtab = 'trapda'
+							where ihit=647
+							group by t.ipda) maxitrk_ipda on maxitrk_ipda.ipda=trapda.ipda
                 INNER JOIN
                     aebhit
                     ON aebhit.ihit = aebtrk.ihit
@@ -141,16 +157,18 @@ class EstadoAneArc:
                     )
                     AND trapda.ientcor IN (244692,252997,244799,77904,246489,251061,185744,244788,255503,252995,253463,253462,77957,253464,244152,89322,96202,94544)
                     AND trapda.cpda LIKE 'TIP%'
+                    --AND ipda = 5215  /* Hay que poner itrk e ipda según las variables acumuladas en el proceso */
+                    --AND ipda = 5215  /* Hay que poner itrk e ipda según las variables acumuladas en el proceso */
+                    AND itrk > {self.max_itrk} and itrk>max_itrk_ipda
+                    AND YEAR(fhit) * 100 + MONTH(fhit) > 202410
 
-                    --AND ipda = 5215  /* Hay que poner itrk e ipda según las variables acumuladas en el proceso */
-                    --AND ipda = 5215  /* Hay que poner itrk e ipda según las variables acumuladas en el proceso */
-                    AND itrk > {self.max_itrk}
-                    AND YEAR(fhit) * 100 + MONTH(fhit) > 202409;
+                   
                     """
 
     def procesa_partida(self, cpda, lines):
         number_of_records = len(lines)
         txt_file_content = ""
+        self.mensaje+=f"\n\nComunicamos los siguientes estados de la CPDA {cpda}:\n\n"
         for line in lines:
             event_code = \
             self.conversion_dict.get(line.get("status_code"), ("Código no encontrado", "Descripción no encontrada"))[0]
@@ -164,6 +182,8 @@ class EstadoAneArc:
                 event_date=line["date_of_event"],
                 event_time=line["time_of_event"]
             )
+            self.mensaje+=f"\n Event_code: {event_code}, Event_desc {event_description}, día {line["date_of_event"]} y hora {line["time_of_event"]} \n"
+
         local_file_path = self.write_txt_file(cpda, txt_file_content)
         success = self.upload_file(local_file_path)
         if isinstance(self.partidas[cpda], list):
@@ -179,6 +199,7 @@ class EstadoAneArc:
             logging.info("8P")
         else:
             logging.info(f"Fallo al subir el archivo para cpda {cpda}")
+            self.mensaje +=f"Fallo al subir el archivo para cpda {cpda}"
 
         # logging.info(txt_file_content)
         return txt_file_content
@@ -222,7 +243,7 @@ class EstadoAneArc:
     def upload_file(self, local_file_path):
         remote_directory = self.remote_work_in_directory
         # remote_file_path = f"{remote_directory}/{os.path.basename(local_file_path)}"
-        remote_file_path = f"{self.remote_work_in_directory}{local_file_path["file_name"]}"
+        remote_file_path = f"{self.remote_work_in_directory}/{local_file_path["file_name"]}"
         try:
             transport = paramiko.Transport((self.host, int(self.port)))
             transport.connect(username=self.username, password=self.password)
@@ -244,6 +265,7 @@ class EstadoAneArc:
                 ipda = data.get('ipda')
                 if not ipda:
                     logging.info(f"No se encontró 'ipda' para cpda {cpda}")
+                    self.mensaje+= f"No se encontró 'ipda' para cpda {cpda}\n"
                     continue
 
                 fechatracking = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
@@ -260,6 +282,7 @@ class EstadoAneArc:
                     logging.info(f"Error al actualizar el comunicado para ipda {ipda}: Código de estado"
                        f" {response['status_code']}")
                 else:
+                    self.mensaje+=f"Comunicado actualizado exitosamente para ipda {ipda}, cpda {cpda} \n"
                     logging.info(f"Comunicado actualizado exitosamente para ipda {ipda}, {cpda}")
 
 
@@ -269,14 +292,17 @@ class EstadoAneArc:
             df = pd.DataFrame(query_reply['contenido'])
             if 'itrk' in df.columns:
                 self.max_itrk = df['itrk'].max()
+                self.mensaje+= f"\nLos eventos van de itrk= {df['itrk'].min()} a itrk = {self.max_itrk }\n\n"
+                self.enviarMensaje=True
             else:
                 # Manejar el caso donde 'itrk' no existe
                 self.max_itrk = None  # O cualquier valor predeterminado que tenga sentido para tu aplicación
                 logging.warning("La columna 'itrk' no se encontró en el DataFrame.")
+                self.mensaje +="La columna 'itrk' no se encontró en el DataFrame.\n"
 
             df = df.fillna("")
             pd.options.display.float_format = '{:.0f}'.format
-            logging.info(df.to_markdown(index=False))
+            #logging.info(df.to_markdown(index=False))
             logging.info(self.max_itrk)
             if self.max_itrk is not None:
                 self.process_query_response(query_reply)
@@ -286,11 +312,12 @@ class EstadoAneArc:
                 second_query_reply = self.bm.n_consulta(self.query_repesca)
                 if second_query_reply.get("contenido") != []:
                     df = pd.DataFrame(second_query_reply['contenido'])
-                    logging.info(df.to_markdown(index=False))
+                    #logging.info(df.to_markdown(index=False))
                     self.partidas = None
                     self.process_query_response(second_query_reply)
                     self.actualizar_comunicado()
-
+        if self.enviarMensaje:
+            self.email.send_email(to_addrs=self.email_list_to, subject="Estado Arcese Anexa", from_addr="Arcese Estado", body=self.mensaje)
 
 if __name__ == "__main__":
     estado_ane_arc = EstadoAneArc()
