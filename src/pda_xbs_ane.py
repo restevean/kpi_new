@@ -1,27 +1,23 @@
 # src/pda_xbs_ane.py
 
-import os
 import logging
-from dotenv import load_dotenv
-from jsonmerge import merge
-from utils.ftp_connect import FtpConnection
-from utils.bordero_xbs import BorderoXBS
-from utils.bmaster_api import BmasterApi as BmApi
-from utils.misc import n_ref
-from utils.buscar_empresa import busca_destinatario
-from utils.send_email import EmailSender
+from send_email import EmailSender
+from utils.logger_config import setup_logger
 from pathlib import Path
+from dotenv import load_dotenv
+import os
+# from utils.bordero_xbs import BorderoXBS
+from utils.bmaster_api import BmasterApi as BmApi
+from utils.ftp_connect import FtpConnection
+from typing import Dict, Any
+from utils.bor_XBS import BorXBT as BorXBS
 import json
-# import psycopg2
+from jsonmerge import merge
+from utils.buscar_empresa import busca_destinatario
 
-# Activamos logging
-logging.basicConfig(
-    level=logging.DEBUG,     # Nivel mínimo de mensajes a mostrar
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Formato del mensaje
-)
+setup_logger()
 logger = logging.getLogger(__name__)
 
-# Empezamos con pathlib y obtenemos el path
 base_dir = Path(__file__).resolve().parent
 
 load_dotenv(dotenv_path=base_dir.parent / "conf" / "env.base")
@@ -31,9 +27,8 @@ load_dotenv(dotenv_path=base_dir.parent / "conf" / f".env.{INTEGRATION_CUST}{ENT
 logger.info(f"Cargando configuración: {INTEGRATION_CUST}{ENTORNO}")
 
 
-class PartidaXbsAne:
-
-    def __init__(self):
+class PdaNewXbsAne:
+    def __init__(self) -> None:
         self.entorno = ENTORNO
         self.base_path = base_dir
         self.ftp_url = os.getenv("FTP_SERVER_XBS")
@@ -47,15 +42,96 @@ class PartidaXbsAne:
         self.local_work_pof_process = self.local_work_directory / "process_pending"
         self.local_work_processed = self.local_work_directory / "processed"
         self.files = None
-        self.bx = BorderoXBS()
+        self.bx = BorXBS()
         self.bm = BmApi()
         self.enc_exp = False
+        self.partida = {}
+        self.barcodes = []
 
+    @staticmethod
+    def expediente_ordenante(header: dict = None) -> dict:
 
-    def load_dir_files(self, subdir=""):
-        # subdir = os.path.join(f"{self.local_work_directory}{subdir}")
-        subdir = self.local_work_directory if subdir == "" else subdir
-        return {
+        if header is None:
+            header = {}
+
+        empresa = busca_destinatario(
+            rsocial=header["Sender Company Name"].strip(),
+            codpostal=header["Sender ZipCode"].strip(),
+            cpais=header["Sender Country Code"].strip()
+        )
+
+        logging.info(empresa)
+
+        if empresa["ient"] > 0:
+            return {"expedidor": {"id": empresa["ient"], }}
+        else:
+            return {
+                "expedidor": {
+                    "division": "VLC",
+                    "descripcion": header["Sender Company Name"].strip() + " +++(BORRAR)+++",
+                    "empresa": {
+                        "division": "VLC",
+                        "codigopaisfiscal": header["Sender Country Code"].strip(),
+                        "descripcion": header["Sender Company Name"].strip(),
+                        "tipopersona": "N",
+                        "nombreempresafisica": header["Sender Company Name"].strip()[:19],
+                        "direccionfiscal": {
+                            "direccion": header["Sender Address"].strip(),
+                            "poblacion": header["Sender Place"].strip(),
+                            "codigopostal": header["Sender ZipCode"].strip(),
+                            "codigopais": header["Sender Country Code"].strip()
+                        }
+                    },
+                }
+            }
+
+    @staticmethod
+    def expediente_destinatario(header: dict = None) -> dict:
+
+        if header is None:
+            header = {}
+
+        empresa = busca_destinatario(
+            rsocial=header["Destination Company Name"].strip(),
+            codpostal=header["Destination ZipCode"].strip(),
+            cpais=header["Destination Country Code"].strip()
+        )
+
+        logging.info(empresa)
+
+        if empresa["ient"] > 0:
+            return {"destinatario": {"id": empresa["ient"]}}
+        else:
+            # json_destinatario = {
+            return {
+                "destinatario": {
+                    "division": "VLC",
+                    "descripcion": header["Destination Company Name"].strip() + " +++(BORRAR)+++",
+                    "codigorelacioncliente": header["Destination Company Name"].strip()[:19],
+                    "empresa": {
+                        "codigopaisfiscal": header["Destination Country Code"].strip(),
+                        "direccionfiscal": {
+                            "direccion": header["Destination Address"].strip(),
+                            "poblacion": header["Destination Place"].strip(),
+                            "codigopostal": header["Destination ZipCode"].strip(),
+                            "codigopais": header["Destination Country Code"].strip()
+                        }
+                    },
+                    "direcciones": [
+                        {
+                            "direccion": header["Destination Address"].strip(),
+                            "poblacion": header["Destination Place"].strip(),
+                            "codigopostal": header["Destination ZipCode"].strip(),
+                            "codigopais": header["Destination Country Code"].strip(),
+                        }
+                    ],
+                }
+            }
+
+    def load_dir_files(self, subdir: Path = None) -> Dict[str, Dict[str, Any]]:
+        subdir = self.local_work_directory if subdir is None else subdir
+        subdir = Path(subdir)
+        filtered_files = {
             file: {
                 "success": False,
                 "n_message": "",
@@ -63,12 +139,13 @@ class PartidaXbsAne:
                 "path": ""
             }
             for file in os.listdir(subdir)
-            # TODO ¡Ojo! en arc los archivos contenían 'BOLLE', ¿aquí como los diferenciamos de los otros?
-            if os.path.isfile(os.path.join(subdir, file))  # and 'BOLLE' in file
+            if os.path.isfile(os.path.join(subdir, file))
+               and 'BORD512' in file
+               and not file.endswith('.json')
         }
+        return filtered_files
 
-
-    def download_files(self):
+    def download_files(self) -> None:
         n_ftp = FtpConnection(self.ftp_url, self.ftp_user, self.ftp_pw)
 
         try:
@@ -80,12 +157,7 @@ class PartidaXbsAne:
             logger.debug(f" --- Accediendo al directorio remoto: {self.remote_work_out_directory}")
             n_ftp.change_directory(self.remote_work_out_directory)
             archivos_remotos = n_ftp.ftp.nlst()
-            # TODO Ojo!, los archivos deben contener 'BORD512' en el nombre.
-            archivos_filtrados = [
-                file for file in archivos_remotos
-                if 'BORD512' in file.upper() and (n_ftp.sftp.stat(file).st_mode & 0o170000 == 0o100000)
-            ]
-            # archivos_filtrados = archivos_remotos
+            archivos_filtrados = [archivo for archivo in archivos_remotos if "BORD512" in archivo]
 
             if not archivos_filtrados:
                 logger.info(" --- No se encontraron para descargar.")
@@ -97,6 +169,9 @@ class PartidaXbsAne:
                     try:
                         n_ftp.download_file(file, local_path)
                         logger.info(f" --- Descargando {file} a {local_path}")
+                        # Hay que eliminar el archivo descargado del remoto
+                        # n_ftp.ftp.delete(file)
+                        # logger.info(f" --- Eliminando {file} del servidor FTP")
                     except Exception as e:
                         logger.error(f" --- Error al descargar {file}: {e}")
                 logger.info(" --- Descarga de archivos completada")
@@ -108,78 +183,90 @@ class PartidaXbsAne:
             logger.info(" --- Desconectado del servidor FTP")
 
 
-    def files_process(self, n_path):
+    def files_process(self, n_path: Path) -> None:
         logger.info(" --- Iniciando el procesamiento de archivos...")
-        # bm = BmApi()
-        # email_sender = EmailSender()
-        encontrado_expediente = False
-        mensaje = ""
 
         for file, info in self.files.items():
-            file_path = os.path.join(n_path, file)
+            file_path = Path(n_path) / file
             info['path'] = file_path
+            trip = ""
+            mensaje = ""
 
-            try:
-                logger.info(f" --- Procesando archivo: {file_path}")
+            # n_ref_cor = ""
+            self.enc_exp = False
 
-                with open(file_path, 'rt') as archivo:
-                    ipda = 0
-                    cpda = ""
-                    # bx = BorderoXBS()
-                    trip = ""
+            # try:
+            logger.info(f" --- Procesando archivo: {file_path}")
+            bor = BorXBS()
 
-                    # Nos leemos el archivo entero antes de procesarlo y generamos el json
-                    for fila in archivo:
-                        if fila[:4] == '@@PH':
-                            continue
-                        elif fila[:3] == 'A00':
-                            cab_partida = self.bx.cabecera_xbs(fila=fila)
-                        else:
-                            n_linea = self.bx.linea_xbs(fila)
+            # with open(base_dir / "bor_xbs.txt", "r", encoding="utf-8") as archivo:
+            with open(self.local_work_directory / file, "r", encoding="utf-8") as archivo:
+                for linea in archivo:
+                    if linea[:3] == "A00":
+                        trip = linea[9:44].strip()
+                    bor.procesar_linea(linea)
+                bor.exportar_json(self.local_work_directory / f"{file}.json")
 
-                    trip = self.bx.expediente_ref_cor()
-                    # self.bx.genera_json_bordero(path= self.local_work_processed / f"Bordero_{trip}:{file}")
-                    self.bx.genera_json_bordero(path= self.local_work_processed / file)
-                    archivo.seek(0)
 
-                    # Procesamos la fila
-                    for fila in archivo:
+            # Buscamos el expediente
+            query = f"select * from traexp where nrefcor in ('{trip}')"
+            query_reply = self.bm.n_consulta(query=query)
 
-                        if fila[:11] == '@@PHBORD100':
-                            continue
-                        # Si es cabecera
-                        if fila[:3] == 'A00':
+            # Si lo encontramos
+            if query_reply["contenido"]:
 
-                            # Por claridad procesamos la cabecera en un methodo separado
-                            process_header_data = self.header_process(file, fila, info)
-                            ipda = process_header_data[0]
-                            cpda = process_header_data[1]
-                            info = process_header_data[2]
-                            trip = process_header_data[3]
+                # Hemos encontrado el expediente
+                self.enc_exp = True
+                expediente_bm = query_reply["contenido"][0]
+                mensaje += f"Expediente {trip} encontrado {expediente_bm['cexp']}"
+                logging.info(f" --- Hemos encontrado el expediente {trip} con ref. Bmaster {expediente_bm['cexp']}"
+                             f"cexp: {expediente_bm['cexp']}/iexp: {expediente_bm['iexp']}")
 
-                        if not encontrado_expediente:
-                            break
+                # Nos creamos un diccionario con los datos que nos interesa (transform)
+                data_to_load = self.transform_results_to_dict(self.local_work_directory / f"{file}.json",
+                                                              expediente_bm)
 
-                        # No es cabecera y se ha encontrado expediente (LINEAS)
-                        elif encontrado_expediente:
+                # Cargamos los datos transformados
+                # Recorrer el diccionario 'data'
+                for partida in data_to_load.get("partidas", []):
 
-                            # Por claridad procesamos la línea en un methodo a parte
-                            self.line_process(fila, ipda, cpda, info)
+                    # Extraer el consignment_number_sending_depot
+                    ref_cor = partida.get("refcorresponsal", "")
 
-                    if not info["process_again"]:
-                        self.bx.genera_json_bordero(path= self.local_work_processed / f"Bordero_{trip}{file}")
+                    # Llamar a partida_add() con el consignment_number_sending_depot
+                    partida_added = self.partida_load(ref_cor, partida, info)
+                    mensaje += partida_added[1]
+                    ipda = partida_added[2]
+                    cpda = partida_added[3]
+                    barcodes = data_to_load.get("barcodes", [])
 
-                info["success"] = True
-                info["n_message"] = mensaje
-                logger.info(f"Archivo procesado exitosamente {file}.")
-            except Exception as e:
-                info["success"] = False
-                mensaje += str(e)
-                info["n_message"] = mensaje
-                logger.error(f"\nError al procesar {file}: {e}\n")
-            finally:
-                logger.info("Procesamiento de archivo completado.")
+                    if partida_added[0]:
+                        # Recorrer la lista de barcodes
+                        barcodes = data_to_load.get("barcodes", [])
+                        # for barcode in barcodes:
+                        for barcode in (b for b in barcodes if b.get("sequential_waybill_item") == ref_cor):
+                            sequential_waybill_item = barcode.get("sequential_waybill_item", "")
+                            consignment_position = barcode.get("consignment_position", "")
+                            code = barcode.get("barcode", "")
 
+                            # Llamar a barcode_add() con la información de los barcodes de la partida
+                            mensaje += self.barcode_load(ref_cor, barcode, ipda, cpda, info)
+
+            else:
+                logger.info(f"Expediente {trip} no encontrado")
+                mensaje += f"Expediente {trip} no encontrado\n"
+                info["process_again"] = True
+
+            info["success"] = True
+            info["n_message"] = mensaje
+            logger.info(f"Archivo procesado exitosamente {file}.")
+            # except Exception as e:
+            #     info["success"] = False
+            #     mensaje += str(e)
+            #     info["n_message"] = mensaje
+            #     logger.error(f"\nError al procesar {file}: {e}\n")
+            # finally:
+            #     logger.info("Procesamiento de archivo completado.")
 
         # Movemos los archivos a processed o process_pending según corresponda
         # Enviamos los correos
@@ -187,142 +274,234 @@ class PartidaXbsAne:
             # email_sender.send_email("javier@kpianalisis.com", self.email_to, f"Partida: {cpda}", info["message"])
             # Movemos a las carpetas según el resultado del proceso
             if info["process_again"]:
-                os.rename(info["path"], f"{self.local_work_pof_process / file}")
-                os.rename(self.local_work_processed / f"{file}_Bordero{trip}.json", self.local_work_pof_process /
-                          f"{file}_Bordero{trip}.json")
+                # os.rename(info["path"], f"{self.local_work_pof_process / file}")
+                # os.rename(self.local_work_processed / f"{file}_Bordero{trip}.json",
+                #           self.local_work_pof_process /
+                #           f"{file}_Bordero{trip}.json")
+                ...
             else:
-                os.rename(info["path"], f"{self.local_work_processed / file}")
+                # os.rename(info["path"], f"{self.local_work_processed / file}")
+                ...
 
+    def partida_load(self, consignment_number, partida, info) -> tuple:
 
-    def header_process(self, file, row, info):
-        logging.info(f" --- Cabecera: \n --- {row}")
-        cab_partida = self.bx.cabecera_xbs(fila=row)
-        trip = self.bx.expediente_ref_cor()  # 2024MO12103
-        self.enc_exp = False
+        success = False
         mensaje = ""
-
-        # Eliminar al descomentar comunicar la partida
-        ipda = 0
+        ipda = ""
         cpda = ""
 
-        # Buscamos el expediente
-        query = f"select * from traexp where nrefcor in ('{trip}', '{n_ref(trip)}')"
-        query_reply = self.bm.n_consulta(query=query)
+        # Buscamos la partida
+        query_existe_partida = f"SELECT ipda, cpda FROM trapda WHERE nrefcor='{consignment_number}'"
+        query_reply_existe_partida = self.bm.n_consulta(query=query_existe_partida)
 
-        #  Si existe el expediente (si la consulta tiene contenido)
-        if query_reply["contenido"]:
-            self.enc_exp = True
+        if not query_reply_existe_partida["contenido"]:
+            logging.debug(f" --- Hemos de comunicar la partida {consignment_number}")
+            resp_partida = self.bm.post_partida(data_json=partida)
 
-            # if f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}" not in mensaje:
-            if f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}" not in info["n_message"]:
-                info["expediente"] = query_reply['contenido'][0]['cexp']
-                mensaje += f"\nEncontrado el expediente: {query_reply['contenido'][0]['cexp']}"
-                logger.info(f" --- Encontrado expediente {query_reply["contenido"][0]["cexp"]}")
-            expediente_bm = query_reply["contenido"][0]
-            pda_json_arc = self.partida_json(cabecera=cab_partida, expediente=expediente_bm)
-
-            # Buscamos la partida
-            n_partida = n_ref(cab_partida["Order Full Number"].strip())
-            query_existe = f"SELECT ipda, cpda FROM trapda WHERE nrefcor='{n_partida}'"
-            query_existe_reply = self.bm.n_consulta(query=query_existe)
-
-            # Si no existe la partida, comunicamos partida
-            if not query_existe_reply["contenido"]:
-                logging.debug(f" --- Hemos de comunicar la partida {n_ref(cab_partida['Order Full Number'
-                                                                          ].strip())}")
-                resp_partida = self.bm.post_partida(data_json=pda_json_arc)
-
-                # Si exito al comunicar la partida
-                if resp_partida["status_code"] == 201:
-                    ipda = resp_partida["contenido"]["id"]
-                    cpda = resp_partida["contenido"]["codigo"]
-                    mensaje += f"\nCreada partida {resp_partida['contenido']['codigo']}"
-                    logging.debug(f" --- Creada partida {resp_partida['contenido']['codigo']}")
-
-                # Si falla comunicar la partida
-                else:
-                    errores = "\n".join(
-                        e["Descripcion"] for e in resp_partida["contenido"]["Errores"])
-                    mensaje += f"\nNo se ha creado la partida {n_ref(cab_partida['Order Full Number'
-                                                                     ].strip())} \n{errores}\n"
-                    logging.debug(logging.debug(f" --- No se ha creado la partida {n_ref(cab_partida['Order Full Number'
-                                                                                         ].strip())} \n{errores}\n"))
-
-            # Si existe la partida
+            # Si éxito al comunicar la partida
+            if resp_partida["status_code"] == 201:
+                ipda = resp_partida["contenido"]["id"]
+                cpda = resp_partida["contenido"]["codigo"]
+                mensaje += f"\nCreada partida {cpda}/{ipda}"
+                logging.debug(f" --- Creada partida {cpda}/{ipda}")
             else:
-                ipda = query_existe_reply["contenido"][0]["ipda"]
-                cpda = query_existe_reply["contenido"][0]["cpda"]
-                mensaje += (f"\nExiste la partida {query_existe_reply['contenido'][0]['cpda']}, "
-                            f"ref corresponsal: {n_ref(cab_partida['Order Full Number'].strip())}")
-                logging.debug(f" --- Existe la partida {query_existe_reply['contenido'][0]['cpda']}, "
-                              f"ref corresponsal: {n_ref(cab_partida['Order Full Number'].strip())}")
-
-        # No existe el expediente (la consulta no tiene contenido)
+                mensaje += f"\nError al comunicar la partida {consignment_number}"
+                logging.error(f" --- Error al comunicar la partida {consignment_number}")
+                success = False
         else:
-            info["process_again"] = True
-            # self.bx.genera_json_bordero(path= self.local_work_processed / f"Bordero_{trip}{file}")
-            mensaje += f"\n No existe el expediente {trip} {n_ref(trip)}"
+            ipda = query_reply_existe_partida["contenido"][0]["ipda"]
+            cpda = query_reply_existe_partida["contenido"][0]["cpda"]
+            mensaje += f"\nLa partida {cpda}/{ipda} ya existe"
+            logging.debug(f" --- Partida {cpda}/{ipda} ya existe")
+            success = True
 
-        # Almacenamos el mensaje y retornamos
-        info["n_message"] += mensaje
-        logging.debug(f" --- No existe el expediente {trip} {n_ref(trip)}")
-        return [ipda, cpda, info, trip]
+        return success, mensaje, ipda, cpda
 
 
-    def line_process(self, row, ipda, cpda, info):
-        logging.info(f" --- Línea: \n --- {row}")
-        n_row = self.bx.linea_xbs(row)
+    def barcode_load(self, ref_cor, barcode, ipda, cpda, info) -> str:
+
+        # Verificamos que la partida no tiene bultos
+        logging.info(f" --- Barcode: {barcode['Barcode']}")
+        # n_row = self.bx.linea_xbs(row)
         mensaje = ""
 
-        # Si tiene nº ipda (partida) y barcode (algún bulto)
-        if ipda > 0 and n_row["Barcode"].strip():
+        # Si tenemos nº ipda (partida) y barcode (algún bulto)
+        if ipda > 0 and barcode["Barcode"].strip():
 
-            # Comprobamos que no existe ese bulto
+            # Comprobamos que no existe rl barcode
             query_barcode = query = (f"SELECT COUNT(1) AS cuenta FROM ttemereti WHERE ipda={ipda} "
-                                     f"AND dcodbar='{n_row['Barcode'].strip()}'")
+                                     f"AND dcodbar='{barcode['Barcode'].strip()}'")
             query_barcode_reply = self.bm.n_consulta(query=query_barcode)
 
-            # Si no existe el bulto
+            # Si no existe
             if not query_barcode_reply:
                 json_etiqueta = {
-                    "codigobarras": n_row["Barcode"].strip(),
-                    "altura": float(n_row["Hight"].strip()) / 100,
-                    "ancho": float(n_row["Width"].strip()) / 100,
-                    "largo": float(n_row["Lenght"].strip()) / 100,
+                    "codigobarras": barcode["Barcode"].strip(),
+                    "altura": float(barcode["Hight"].strip()) / 100,
+                    "ancho": float(barcode["Width"].strip()) / 100,
+                    "largo": float(barcode["Lenght"].strip()) / 100,
                 }
-                #  Enchufamos el bulto
-                resp_etiqueta = self.bm.post_partida_etiqueta(id=ipda, data_json=json_etiqueta)
-                # Actualizamos el emnsaje en función del resultado
+                # Cargamos el barcode
+                resp_etiqueta = self.bm.post_partida_etiqueta(paet_id=ipda, data_json=json_etiqueta)
+
+                # Actualizamos el mensaje en función del resultado
                 if resp_etiqueta["cod_error"] == 201:
-                    mensaje += f"\nSubida Etiqueta. {n_row['Barcode'].strip()}"
+                    mensaje += f"\nSubida Etiqueta. {barcode['Barcode'].strip()}"
                 else:
-                    mensaje += (f"\nYa existe la etiqueta {n_row['Barcode'].strip()} "
-                                f"de la "
-                                f"partida {cpda}")
+                    mensaje += (f"\nYa existe la etiqueta {barcode['Barcode'].strip()} de la partida {cpda}")
+
             # Si existe el bulto
             else:
-                mensaje += f"\nSe encontró el bulto {n_row['Barcode'].strip()}"
+                mensaje += f"\nSe encontró el bulto {barcode['Barcode'].strip()}"
                 logging.info("Bulto encontrado")
 
         else:
-            logging.info(f"No es cabecera, cpda: {cpda}, ipda: {ipda}, barcode: {n_row['Barcode'].strip()}")
+            logging.info(f"No es cabecera, cpda: {cpda}, ipda: {ipda}, barcode: {barcode['Barcode'].strip()}")
 
+        return mensaje
+
+
+    def transform_results_to_dict(self, json_path: Path, expediente: dict) -> Dict[str, Any]:
+        with Path(json_path).open("r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        partidas_list = []
+        barcodes_list = []
+
+        for partida in data.get("partidas", []):
+
+            # Obtenemos los registros que contienen los datos necesarios
+            b00_shp = partida.get("B00-SHP", {})
+            b00_con = partida.get("B00-CON", {})
+            g00 = partida.get("G00", {})
+
+            shipper = {
+                "Sender Company Name": b00_shp.get("name_1", ""),
+                "Sender Address": b00_shp.get("street_and_street_number", ""),
+                "Sender ZipCode": b00_shp.get("postcode", ""),
+                "Sender Place": b00_shp.get("place", ""),
+                "Sender Country Code": b00_shp.get("country_code", "")
+
+            }
+            consignee = {
+                "Destination Company Name": b00_con.get("name_1", ""),
+                "Destination Address": b00_con.get("street_and_street_number", ""),
+                "Destination ZipCode": b00_con.get("postcode", ""),
+                "Destination Place": b00_con.get("place", ""),
+                "Destination Country Code": b00_con.get("country_code", "")}
+
+            shipper_json = self.expediente_ordenante(header=shipper)
+            consignee_json = self.expediente_destinatario(header=consignee)
+
+            # Extraemos los datos de G00
+            consignment_number_sending_depot = g00.get("consignment_number_sending_depot", "").strip()
+            total_gross_weight_str = g00.get("actual_consignment_gross_weight_in_kg", "0").strip()
+            total_volume_str = g00.get("cubic_meters", "0").strip()
+            insured_amount_str = g00.get("goods_value", "0").strip()
+            total_gross_weight = float(total_gross_weight_str) / 100
+            total_volume = float(total_volume_str) / 100
+            insured_amount = float(insured_amount_str) / 100
+
+            # Obtenemos de D00 (num_err_of/número bultos) de la partida
+            bultos = partida.get("bultos", [])
+            d00_num_err_of = None
+            if bultos:
+                primer_bulto = bultos[0]
+                d00 = primer_bulto.get("D00", {})
+                d00_num_err_of = d00.get("num_err_of", "").strip()
+
+            # Construir la partida
+            partida_dict = {
+                "division": "VLC",
+                "estado": "FBLE",
+                "expediente": expediente["cexp"],
+                "trafico": "TI",
+                "tipotrafico": "TER",
+                "flujo": "I",
+                "refcliente": expediente["ientrefcli"],
+                "refcorresponsal": consignment_number_sending_depot,
+                "tipocarga": "C",
+                "puertoorigen": "", # "TIRARCCAM"
+                "puertodestino": "TIRANERIB",
+                "paisorigen": b00_shp.get("country_code", "").strip(),
+                "paisdestino": b00_con.get("country_code", "").strip(),
+                "portes": "s",
+                "incoterm": "XXX",
+                "servicio": "NOR",
+                "bultos": d00_num_err_of,
+                "tipobultos": "PX",
+                "pesobruto": total_gross_weight,
+                "pesoneto": total_gross_weight,
+                "pesotasable": total_gross_weight,
+                "volumen": total_volume,
+                "seguro": "S",
+                "valorasegurable": insured_amount,
+                "divisa": "EUR",
+                "divisavinculacion": "EUR",
+                "tipovinculacion": "SV",
+                "aduanas": "N",
+                "gdp": "N",
+                "almacenlogico": "CROS",
+                "generarentradaalmacen": False,
+                "generaralbarandistribucion": False,
+                "tipotransportenacional": "S",
+                "tipotransporteextranjero": "S",
+                "fechaprevistasalida": expediente["fpresal"],
+                "fechasalida": expediente["fsal"],
+                "fechaprevistallegada": expediente["fprelle"],
+                "fechallegada": expediente["flle"],
+            }
+            partidas_list.append(partida_dict)
+
+            if shipper_json is not None:
+                partidas_list[-1] = merge(partidas_list[-1], shipper_json)
+
+            # TODO Falta el incoterm
+            if partidas_list[-1]["incoterm"] == "DAP":
+                json_fact = {
+                    "clientefacturacion": {
+                        "id": expediente["ientcor"]
+                    }
+                }
+                partidas_list[-1] = merge(partidas_list[-1], json_fact)
+
+            if consignee_json is not None:
+                partidas_list[-1] = merge(partidas_list[-1], consignee_json)
+
+
+            # Extraemos todos los códigos de barras (F00) de esta partida
+            for bulto in bultos:
+                barcodes_in_bulto = bulto.get("barcodes", [])
+                for barcode_element in barcodes_in_bulto:
+                    f00 = barcode_element.get("F00", {})
+                    codigo_barras = f00.get("barcode", "").strip()
+                    if codigo_barras:
+                        barcodes_list.append({
+                            "partida": consignment_number_sending_depot,
+                            "codigobarras": codigo_barras,
+                            "altura": 0.0,
+                            "ancho": 0.0,
+                            "largo": 0.0
+                        })
+
+        return {
+            "partidas": partidas_list,
+            "barcodes": barcodes_list
+        }
 
     def run(self):
 
         # Nos ocupamos primero de los descargados antes y sin iexp/cexp
         logger.info("\nIniciando proceso de archivos que estaban pendientes de procesar")
-        # pda_xbs = PartidaXbsAne()
-        self.load_dir_files(self.local_work_pof_process)
-        if self.files:
-            # self.files_process(self.local_work_pof_process)
-            logging.info("Procesados los archivos que estaban pendientes de procesar")
+        # self.files = self.load_dir_files(self.local_work_pof_process)
+        # if self.files:
+        #     # self.files_process(self.local_work_pof_process)
+        #     logging.info("Procesados los archivos que estaban pendientes de procesar")
+        #     self.files = None
 
         # Procesamos los recién descargados del FTP
         logger.info("\nIniciando proceso de archivos descargados")
-        self.download_files()
-        # self.files = None
-        # self.files = self.load_dir_files(self.local_work_directory)
+        # self.download_files()
         self.files = self.load_dir_files()
         if self.files:
             self.files_process(self.local_work_directory)
@@ -330,5 +509,5 @@ class PartidaXbsAne:
 
 
 if __name__ == "__main__":
-    partida = PartidaXbsAne()
-    partida.run()
+    pda_new_xbs_ane = PdaNewXbsAne()
+    pda_new_xbs_ane.run()

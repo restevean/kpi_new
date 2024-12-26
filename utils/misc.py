@@ -30,17 +30,45 @@ def date_yyyy_mm_dd(fecha: str = "", hora: Optional[str] = None) -> str:
     return fecha_completa.strftime("%Y-%m-%dT%H:%M:%S")
 
 
-def n_ref(trip_ref='', mode=""): # "r" de reverse
-    # Mode == "r" 12103/2024/MO  --> 2024MO12103
-    # With no mode 2024MO12103  --> 12103/2024/MO
+# def n_ref(trip_ref='', mode=""): # "r" de reverse
+#     # Mode == "r" 12103/2024/MO  --> 2024MO12103
+#     # With no mode 2024MO12103  --> 12103/2024/MO
+#     if trip_ref:
+#         trip_=trip_ref.strip() # 2024MO12103
+#         if mode == "r":
+#             parts = trip_ref.split("/")
+#             return f"{parts[1]}{parts[2]}{parts[0]}"
+#         else:
+#             return f"{trip_[6:]}/{trip_[:4]}/{trip_[4:6]}"
+#     return " " * 10
+
+
+def n_ref(trip_ref='', mode=""):  # "r" de reverse
+    """
+    - Modo "r":
+        12103/2024/MO  --> 2024MO12103
+        Debe comprobar que 'trip_ref' contenga exactamente 2 barras '/'
+        y que no estén consecutivas ("//"). Si el formato no es correcto,
+        devuelve '' (cadena vacía).
+    - Modo por defecto (sin "r"):
+        2024MO12103 --> 12103/2024/MO
+    """
+
     if trip_ref:
-        trip_=trip_ref.strip() # 2024MO12103
+        trip_ = trip_ref.strip()
         if mode == "r":
-            parts = trip_ref.split("/")
-            return f"{parts[1]}{parts[2]}{parts[0]}"
+            # Validar que existan exactamente 2 "/" y que no haya "//"
+            if trip_.count("/") == 2 and "//" not in trip_:
+                parts = trip_.split("/")
+                return f"{parts[1]}{parts[2]}{parts[0]}"
+            else:
+                return " " * 10 # No cumple formato
         else:
+            # Sin modo "r", asumimos que el formato es 2024MO12103
             return f"{trip_[6:]}/{trip_[:4]}/{trip_[4:6]}"
+
     return " " * 10
+
 
 
 def comprobar_codificacion(filepath):
