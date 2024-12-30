@@ -1,6 +1,7 @@
 .idea
 .vscode
 .env
+.aws/
 __pycache__
 conf/
 .DS_Store
