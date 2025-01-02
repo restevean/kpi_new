@@ -11,10 +11,8 @@ from utils.misc import n_ref
 import pandas as pd
 import logging
 from datetime import datetime
-from pathlib import Path
 import paramiko
 from pathlib import Path
-
 
 
 # Activamos logging

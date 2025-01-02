@@ -195,93 +195,92 @@ class PdaNewXbsAne:
             # n_ref_cor = ""
             self.enc_exp = False
 
-            # try:
-            logger.info(f" --- Procesando archivo: {file_path}")
-            bor = BorXBS()
+            try:
+                logger.info(f" --- Procesando archivo: {file_path}")
+                bor = BorXBS()
 
-            # with open(base_dir / "bor_xbs.txt", "r", encoding="utf-8") as archivo:
-            with open(self.local_work_directory / file, "r", encoding="utf-8") as archivo:
-                for linea in archivo:
-                    if linea[:3] == "A00":
-                        trip = linea[9:44].strip()
-                    bor.procesar_linea(linea)
-                bor.exportar_json(self.local_work_directory / f"{file}.json")
+                # with open(base_dir / "bor_xbs.txt", "r", encoding="utf-8") as archivo:
+                with open(self.local_work_directory / file, "r", encoding="utf-8") as archivo:
+                    for linea in archivo:
+                        if linea[:3] == "A00":
+                            trip = linea[9:44].strip()
+                        bor.procesar_linea(linea)
+                    bor.exportar_json(self.local_work_directory / f"{file}.json")
 
 
-            # Buscamos el expediente
-            query = f"select * from traexp where nrefcor in ('{trip}')"
-            query_reply = self.bm.n_consulta(query=query)
+                # Buscamos el expediente
+                query = f"select * from traexp where nrefcor in ('{trip}')"
+                query_reply = self.bm.n_consulta(query=query)
 
-            # Si lo encontramos
-            if query_reply["contenido"]:
+                # Si lo encontramos
+                if query_reply["contenido"]:
 
-                # Hemos encontrado el expediente
-                self.enc_exp = True
-                expediente_bm = query_reply["contenido"][0]
-                mensaje += f"Expediente {trip} encontrado {expediente_bm['cexp']}"
-                logging.info(f" --- Hemos encontrado el expediente {trip} con ref. Bmaster {expediente_bm['cexp']}"
-                             f"cexp: {expediente_bm['cexp']}/iexp: {expediente_bm['iexp']}")
+                    # Hemos encontrado el expediente
+                    self.enc_exp = True
+                    expediente_bm = query_reply["contenido"][0]
+                    mensaje += f"Expediente {trip} encontrado {expediente_bm['cexp']}"
+                    logging.info(f" --- Hemos encontrado el expediente {trip} con ref. Bmaster {expediente_bm['cexp']}"
+                                 f"cexp: {expediente_bm['cexp']}/iexp: {expediente_bm['iexp']}")
 
-                # Nos creamos un diccionario con los datos que nos interesa (transform)
-                data_to_load = self.transform_results_to_dict(self.local_work_directory / f"{file}.json",
-                                                              expediente_bm)
+                    # Nos creamos un diccionario con los datos que nos interesa (transform)
+                    data_to_load = self.transform_results_to_dict(self.local_work_directory / f"{file}.json",
+                                                                  expediente_bm)
 
-                # Cargamos los datos transformados
-                # Recorrer el diccionario 'data'
-                for partida in data_to_load.get("partidas", []):
+                    # Cargamos los datos transformados
+                    # Recorrer el diccionario 'data'
+                    for partida in data_to_load.get("partidas", []):
 
-                    # Extraer el consignment_number_sending_depot
-                    ref_cor = partida.get("refcorresponsal", "")
+                        # Extraer el consignment_number_sending_depot
+                        ref_cor = partida.get("refcorresponsal", "")
 
-                    # Llamar a partida_add() con el consignment_number_sending_depot
-                    partida_added = self.partida_load(ref_cor, partida, info)
-                    mensaje += partida_added[1]
-                    ipda = partida_added[2]
-                    cpda = partida_added[3]
-                    barcodes = data_to_load.get("barcodes", [])
-
-                    if partida_added[0]:
-                        # Recorrer la lista de barcodes
+                        # Llamar a partida_add() con el consignment_number_sending_depot
+                        partida_added = self.partida_load(ref_cor, partida, info)
+                        mensaje += partida_added[1]
+                        ipda = partida_added[2]
+                        cpda = partida_added[3]
                         barcodes = data_to_load.get("barcodes", [])
-                        # for barcode in barcodes:
-                        for barcode in (b for b in barcodes if b.get("sequential_waybill_item") == ref_cor):
-                            sequential_waybill_item = barcode.get("sequential_waybill_item", "")
-                            consignment_position = barcode.get("consignment_position", "")
-                            code = barcode.get("barcode", "")
 
-                            # Llamar a barcode_add() con la información de los barcodes de la partida
-                            mensaje += self.barcode_load(ref_cor, barcode, ipda, cpda, info)
+                        if partida_added[0]:
+                            # Recorrer la lista de barcodes
+                            barcodes = data_to_load.get("barcodes", [])
+                            # for barcode in barcodes:
+                            for barcode in (b for b in barcodes if b.get("sequential_waybill_item") == ref_cor):
+                                sequential_waybill_item = barcode.get("sequential_waybill_item", "")
+                                consignment_position = barcode.get("consignment_position", "")
+                                code = barcode.get("barcode", "")
 
-            else:
-                logger.info(f"Expediente {trip} no encontrado")
-                mensaje += f"Expediente {trip} no encontrado\n"
-                info["process_again"] = True
+                                # Llamar a barcode_add() con la información de los barcodes de la partida
+                                mensaje += self.barcode_load(ref_cor, barcode, ipda, cpda, info)
 
-            info["success"] = True
-            info["n_message"] = mensaje
-            logger.info(f"Archivo procesado exitosamente {file}.")
-            # except Exception as e:
-            #     info["success"] = False
-            #     mensaje += str(e)
-            #     info["n_message"] = mensaje
-            #     logger.error(f"\nError al procesar {file}: {e}\n")
-            # finally:
-            #     logger.info("Procesamiento de archivo completado.")
+                else:
+                    logger.info(f"Expediente {trip} no encontrado")
+                    mensaje += f"Expediente {trip} no encontrado\n"
+                    info["process_again"] = True
+
+                info["success"] = True
+                info["n_message"] = mensaje
+                logger.info(f"Archivo procesado exitosamente {file}.")
+            except Exception as e:
+                info["success"] = False
+                mensaje += str(e)
+                info["n_message"] = mensaje
+                logger.error(f"\nError al procesar {file}: {e}\n")
+            finally:
+                logger.info("Procesamiento de archivo completado.")
 
         # Movemos los archivos a processed o process_pending según corresponda
         # Enviamos los correos
         for file, info in self.files.items():
-            # email_sender.send_email("javier@kpianalisis.com", self.email_to, f"Partida: {cpda}", info["message"])
+            email_sender.send_email("javier@kpianalisis.com", self.email_to, f"Partida: {cpda}", info["message"])
             # Movemos a las carpetas según el resultado del proceso
             if info["process_again"]:
-                # os.rename(info["path"], f"{self.local_work_pof_process / file}")
-                # os.rename(self.local_work_processed / f"{file}_Bordero{trip}.json",
-                #           self.local_work_pof_process /
-                #           f"{file}_Bordero{trip}.json")
-                ...
+                os.rename(info["path"], f"{self.local_work_pof_process / file}")
+                os.rename(self.local_work_processed / f"{file}_Bordero{trip}.json",
+                          self.local_work_pof_process /
+                          f"{file}_Bordero{trip}.json")
             else:
-                # os.rename(info["path"], f"{self.local_work_processed / file}")
-                ...
+                os.rename(info["path"], f"{self.local_work_processed / file}")
+
 
     def partida_load(self, consignment_number, partida, info) -> tuple:
 
@@ -501,7 +500,7 @@ class PdaNewXbsAne:
 
         # Procesamos los recién descargados del FTP
         logger.info("\nIniciando proceso de archivos descargados")
-        # self.download_files()
+        self.download_files()
         self.files = self.load_dir_files()
         if self.files:
             self.files_process(self.local_work_directory)
