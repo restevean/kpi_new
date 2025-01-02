@@ -31,7 +31,6 @@ EMAIL_TO_XBS = os.getenv("EMAIL_TO_XBS")
 class ExpteAneXbs:
     def __init__(self):
         self.bm = BmApi()
-        self.email = Email()
         self.ftp_server_xbs = os.getenv("FTP_SERVER_XBS")
         self.ftp_user_xbs = os.getenv("FTP_USER_XBS")
         self.ftp_pw_xbs = os.getenv("FTP_PW_XBS")
@@ -46,18 +45,36 @@ class ExpteAneXbs:
         self.sftp_json_path_ane = os.getenv("SFTP_JSON_PATH_ANE")
         self.local_work_dir = base_dir.parent / "fixtures" / "xbs" / "edi"
         self.email_from = "Expediente Anexa-XBS" if ENTORNO == "pro" else "(TEST) Expediente Anexa-XBS"
+        # TODO En caso de que sea ENTORNO == "pro", suponemos que además recibe correo "trafico6@anexalogistica.com"
         self.email_to = [EMAIL_OURS, EMAIL_TO_XBS]
+        self.email_to += ["trafico6@anexalogistica.com"] if ENTORNO == "pro" else []
+        self.smtp_server = os.getenv("SMTP_SERVER")
+        self.smtp_port = os.getenv("SMTP_PORT")
+        self.smtp_username = os.getenv("SMTP_USERNAME")
+        self.smtp_pw = os.getenv("SMTP_PW")
+        self.email_subject = "Expediente Anexa-XBS"
+        self.email = Email(self.smtp_server, self.smtp_port, self.smtp_username, self.smtp_pw)
 
 
     def transform(self, query_reply):
+        # Creamos el archivo json en la carpeta local /fixtures/xbs/edi
+        # Creamos el archivo edi en la carpeta local /fixtures/xbs/edi
         ...
 
 
     def load_results(self):
+        # Guardamos el json en el SFTP de ane
+        # Guiardamos el edi en el FTP de xbs
         ...
 
 
-    def send_email(self):
+    def send_emails(self):
+        self.email.send_email(
+            from_addr=self.email_from,
+            to_addrs=self.email_to,
+            subject=self.email_subject,
+            body="Este es un correo de prueba."
+        )
         ...
 
 
@@ -181,7 +198,7 @@ class ExpteAneXbs:
         if query_reply["contenido"]:
             self.transform(query_reply)
             self.load_results()
-            self.send_email()
+            self.send_emails()
 
 
 if __name__ == "__main__":
