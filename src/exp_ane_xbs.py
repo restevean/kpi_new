@@ -56,6 +56,125 @@ class ExpteAneXbs:
         self.email = Email(self.smtp_server, self.smtp_port, self.smtp_username, self.smtp_pw)
 
 
+    def extract(self):
+        query = """
+                  SELECT 
+                      hitos.ihit,
+                      [iexp],
+                      [cexp],
+                      exp.[idvn],
+                      [itra],
+                      [fsal],
+                      [flle],
+                      [fcie],
+                      [ipaiori],
+                      [ipaides],
+                      [ipueori],
+                      [ipuedes],
+                      [nmaw],
+                      [icia],
+                      [ipry],
+                      [dmedtra],
+                      [dalm],
+                      [tneu],
+                      [tfle],
+                      [ientcor],
+                      [ientcol],
+                      [ienttra],
+                      exp.[cusualt],
+                      exp.[faltrto],
+                      exp.[cusumod],
+                      exp.[fmod],
+                      exp.[hmod],
+                      [imedtra],
+                      [idivfle],
+                      [vcamfle],
+                      [ientnav],
+                      [ipdatip],
+                      [nrefcor],
+                      [nref],
+                      [itrnest],
+                      [imedtralin],
+                      [vcstkildeb],
+                      [vkil],
+                      [vmaw],
+                      [ktasmaw],
+                      [vcstmaw],
+                      [iser],
+                      [fvue],
+                      [tgtc],
+                      [ilocmer],
+                      [tdescon],
+                      [nbkgpda],
+                      [ipdaedihis],
+                      [ipaimedtra],
+                      [fllnctn],
+                      [hllnctn],
+                      [tcol],
+                      [iexpcol],
+                      [ientcol2],
+                      [dpueoriexp],
+                      [dpuedesexp],
+                      [fpresal],
+                      [fprelle],
+                      [ndiatra],
+                      [ientrefcli],
+                      [ientord],
+                      [fclodat],
+                      [ttrabdo],
+                      [ienthan],
+                      [icodposori],
+                      [dpobori],
+                      [icodposdes],
+                      [dpobdes],
+                      [npre],
+                      [npresec],
+                      [imedtratra],
+                      [imedtrabuq],
+                      [ipercdt],
+                      [ntelcdt],
+                      [temb],
+                      [dnomcomcor2],
+                      [tgesdocadjedp],
+                      [inumcon]
+                  FROM 
+                      traexp exp
+                  INNER JOIN 
+                      (
+                          SELECT 
+                              hit.*, 
+                              hit2.ihit 
+                          FROM 
+                              (
+                                  SELECT 
+                                      MAX(itrk) AS itrk,
+                                      creg 
+                                  FROM 
+                                      [dbo].[aebtrk]
+                                  WHERE 
+                                      dtab = 'traexp' 
+                                      AND ihit IN (627, 628)
+                                  GROUP BY 
+                                      creg
+                              ) hit
+                          INNER JOIN 
+                              [dbo].[aebtrk] hit2 
+                              ON hit2.itrk = hit.itrk
+                      ) hitos 
+                      ON hitos.creg = exp.iexp
+                  WHERE 
+                      hitos.ihit = 627 
+                      AND exp.ientcor IN (
+                          248320, 249456
+                      ) 
+                      AND exp.cexp LIKE 'TE%'
+                  ORDER BY 
+                      iexp DESC
+                  """
+        query_reply = self.bm.n_consulta(query)
+        return query_reply
+
+
     def transform(self, query_reply):
         # Creamos el archivo json en la carpeta local /fixtures/xbs/edi
         # Creamos el archivo edi en la carpeta local /fixtures/xbs/edi
@@ -79,124 +198,9 @@ class ExpteAneXbs:
 
 
     def run(self):
-        query = """
-            SELECT 
-                hitos.ihit,
-                [iexp],
-                [cexp],
-                exp.[idvn],
-                [itra],
-                [fsal],
-                [flle],
-                [fcie],
-                [ipaiori],
-                [ipaides],
-                [ipueori],
-                [ipuedes],
-                [nmaw],
-                [icia],
-                [ipry],
-                [dmedtra],
-                [dalm],
-                [tneu],
-                [tfle],
-                [ientcor],
-                [ientcol],
-                [ienttra],
-                exp.[cusualt],
-                exp.[faltrto],
-                exp.[cusumod],
-                exp.[fmod],
-                exp.[hmod],
-                [imedtra],
-                [idivfle],
-                [vcamfle],
-                [ientnav],
-                [ipdatip],
-                [nrefcor],
-                [nref],
-                [itrnest],
-                [imedtralin],
-                [vcstkildeb],
-                [vkil],
-                [vmaw],
-                [ktasmaw],
-                [vcstmaw],
-                [iser],
-                [fvue],
-                [tgtc],
-                [ilocmer],
-                [tdescon],
-                [nbkgpda],
-                [ipdaedihis],
-                [ipaimedtra],
-                [fllnctn],
-                [hllnctn],
-                [tcol],
-                [iexpcol],
-                [ientcol2],
-                [dpueoriexp],
-                [dpuedesexp],
-                [fpresal],
-                [fprelle],
-                [ndiatra],
-                [ientrefcli],
-                [ientord],
-                [fclodat],
-                [ttrabdo],
-                [ienthan],
-                [icodposori],
-                [dpobori],
-                [icodposdes],
-                [dpobdes],
-                [npre],
-                [npresec],
-                [imedtratra],
-                [imedtrabuq],
-                [ipercdt],
-                [ntelcdt],
-                [temb],
-                [dnomcomcor2],
-                [tgesdocadjedp],
-                [inumcon]
-            FROM 
-                traexp exp
-            INNER JOIN 
-                (
-                    SELECT 
-                        hit.*, 
-                        hit2.ihit 
-                    FROM 
-                        (
-                            SELECT 
-                                MAX(itrk) AS itrk,
-                                creg 
-                            FROM 
-                                [dbo].[aebtrk]
-                            WHERE 
-                                dtab = 'traexp' 
-                                AND ihit IN (627, 628)
-                            GROUP BY 
-                                creg
-                        ) hit
-                    INNER JOIN 
-                        [dbo].[aebtrk] hit2 
-                        ON hit2.itrk = hit.itrk
-                ) hitos 
-                ON hitos.creg = exp.iexp
-            WHERE 
-                hitos.ihit = 627 
-                AND exp.ientcor IN (
-                    248320, 249456
-                ) 
-                AND exp.cexp LIKE 'TE%'
-            ORDER BY 
-                iexp DESC
-            """
-
-        query_reply = self.bm.n_consulta(query)
-        if query_reply["contenido"]:
-            self.transform(query_reply)
+        expedientes = self.extract()
+        if expedientes["contenido"]:
+            self.transform(expedientes)
             self.load_results()
             self.send_emails()
 
